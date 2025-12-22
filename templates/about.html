@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>About Us | 청년 정책 플랫폼</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css">
+
+    <link rel="stylesheet" href="/static/style.css">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-orange': '#F48245',
+                        'primary-teal': '#4A9EA8',
+                        'primary-beige': '#D9B36C',
+                        'primary-red': '#FF5A5F',
+                        'bg-light': '#FFFFFF',
+                        'text-main': '#000000',
+                    },
+                    fontFamily: {
+                        sans: ['Pretendard', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="font-sans antialiased">
+
+    {% include "nav.html" %}
+
+    <main class="body-container about-container">
+        <section class="about-header">
+            <h1 class="about-title">About us</h1>
+
+            <div class="about-intro-wrapper">
+                <div class="video-placeholder">
+                    <div class="play-button">
+                        <i class="fa-solid fa-play"></i>
+                    </div>
+                </div>
+
+                <div class="contact-info">
+                    <h3>Contact</h3>
+                    <p class="contact-desc">
+                        청년들을 위한 정책 플랫폼, <br>
+                        우리는 청년의 내일을 응원합니다.
+                    </p>
+                    <div class="contact-details">
+                        <p><strong>Email:</strong> contact@mediafrontier.com</p>
+                        <p><strong>Project:</strong> Youth Policy Platform</p>
+                        <p class="highlight">미디어프론티어 2기 수강생 프로젝트</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="team-section">
+            <h2 class="section-title-left">Our Team</h2>
+            <div class="team-grid">
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="/static/images/Team_01.png"
+                            onerror="this.src='[https://placehold.co/200x200/png?text=Team+01](https://placehold.co/200x200/png?text=Team+01)'"
+                            alt="Member 1">
+                    </div>
+                    <div class="team-info">
+                        <h3>Alex L.</h3>
+                        <p>Founder and Creative Director</p>
+                    </div>
+                </div>
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="/static/images/Team_02.png"
+                            onerror="this.src='[https://placehold.co/200x200/png?text=Team+02](https://placehold.co/200x200/png?text=Team+02)'"
+                            alt="Member 2">
+                    </div>
+                    <div class="team-info">
+                        <h3>Cathy G.</h3>
+                        <p>Managing Director and Partner</p>
+                    </div>
+                </div>
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="/static/images/Team_03.png"
+                            onerror="this.src='[https://placehold.co/200x200/png?text=Team+03](https://placehold.co/200x200/png?text=Team+03)'"
+                            alt="Member 3">
+                    </div>
+                    <div class="team-info">
+                        <h3>Minu K.</h3>
+                        <p>Frontend Developer</p>
+                    </div>
+                </div>
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="/static/images/Team_04.png"
+                            onerror="this.src='[https://placehold.co/200x200/png?text=Team+04](https://placehold.co/200x200/png?text=Team+04)'"
+                            alt="Member 4">
+                    </div>
+                    <div class="team-info">
+                        <h3>Sarah J.</h3>
+                        <p>UX/UI Designer</p>
+                    </div>
+                </div>
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="/static/images/Team_05.png"
+                            onerror="this.src='[https://placehold.co/200x200/png?text=Team+05](https://placehold.co/200x200/png?text=Team+05)'"
+                            alt="Member 5">
+                    </div>
+                    <div class="team-info">
+                        <h3>David P.</h3>
+                        <p>Data Analyst</p>
+                    </div>
+                </div>
+                <div class="team-card">
+                    <div class="team-img">
+                        <img src="/static/images/Team_06.png"
+                            onerror="this.src='[https://placehold.co/200x200/png?text=Team+06](https://placehold.co/200x200/png?text=Team+06)'"
+                            alt="Member 6">
+                    </div>
+                    <div class="team-info">
+                        <h3>Jenny W.</h3>
+                        <p>Content Manager</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="footer-section">
+        <img src="/static/images/footer.png"
+            onerror="this.src='[https://placehold.co/1200x200/transparent/333?text=Cityscape+Footer](https://placehold.co/1200x200/transparent/333?text=Cityscape+Footer)'"
+            alt="Footer Cityscape">
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+
+</html>

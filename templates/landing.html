@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sseuk-Sseuk : 지역 소식</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        /* [1] 지도 컨테이너 및 SVG 반응형 설정 */
+        #svg-container { perspective: 1000px; overflow: visible; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        #svg-container svg { width: 100% !important; height: auto !important; max-height: 80vh !important; max-width: 100% !important; display: block; transform-origin: center center; overflow: visible; }
+        
+        /* [2] 퍼즐 조각 스타일 */
+        .puzzle-piece { cursor: pointer; transform-style: preserve-3d; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        g.puzzle-piece path, path.puzzle-piece { fill: #ffffff; stroke: #4A9EA8; stroke-width: 1px; filter: drop-shadow(0px 4px 0px #4A9EA8) drop-shadow(0px 5px 5px rgba(0, 0, 0, 0.1)); transition: all 0.4s ease; }
+        .puzzle-piece:hover { transform: translateZ(20px) translateY(-15px); z-index: 50; }
+        .puzzle-piece:hover path, path.puzzle-piece:hover { filter: drop-shadow(0px 15px 0px #4A9EA8) drop-shadow(0px 25px 30px rgba(74, 158, 168, 0.4)); }
+
+        /* [3] 비활성 영역 */
+        .region-disabled { pointer-events: none; opacity: 0.5; }
+        .region-disabled path, path.region-disabled { fill: #eeeeee; stroke: #dddddd; filter: none; }
+
+        /* [4] UI 요소 */
+        #info-tooltip { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 100; display: none; align-items: center; }
+        .tooltip-line { height: 1px; background-color: #4A9EA8; box-shadow: 0 0 5px #4A9EA8; }
+        .tooltip-content { display: flex; flex-direction: column; opacity: 0; }
+        .tooltip-badge { font-size: 10px; background-color: #E0BA76; color: white; padding: 2px 6px; border-radius: 9999px; margin-bottom: 4px; font-weight: bold; width: fit-content; }
+        .tooltip-title { font-size: 1.5rem; font-weight: 800; color: #374151; line-height: 1; margin-bottom: 4px; }
+        .tooltip-count { font-size: 1rem; color: #6B7280; font-weight: 500; }
+        .tooltip-count span { color: #4A9EA8; font-weight: 700; }
+
+        /* 모달 스타일 (auth-input 등 공통 스타일은 auth_modal.html CSS와 공유됨) */
+        .auth-input { width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid #e5e7eb; background-color: #f9fafb; outline: none; transition: all 0.2s ease; font-size: 1rem; }
+        .auth-input:focus { background-color: #fff; border-color: #4A9EA8; box-shadow: 0 0 0 4px rgba(74, 158, 168, 0.1); }
+        #transition-overlay { position: fixed; inset: 0; background-color: white; z-index: 9999; pointer-events: none; opacity: 0; }
+
+        /* 배경 */
+        body { background-color: #f9fafb; background-image: radial-gradient(#4A9EA8 1.5px, transparent 1.5px), radial-gradient(#F48245 1.5px, transparent 1.5px), radial-gradient(#D9B36C 1.5px, transparent 1.5px); background-size: 75px 75px; background-position: 0 0, 25px 25px, 50px 50px; animation: particleMove 60s linear infinite; }
+        @keyframes particleMove { 0% { background-position: 0 0, 25px 25px, 50px 50px; } 100% { background-position: 750px 0, 775px 25px, 800px 50px; } }
+    </style>
+</head>
+
+<body class="text-gray-900 overflow-hidden h-screen flex flex-col relative font-sans">
+    <div id="transition-overlay"></div>
+    <div id="intro-gate" class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-gray-50/90 backdrop-blur-md transition-all duration-700 hidden">
+        <div class="text-center space-y-8 opacity-0 translate-y-10" id="intro-content">
+            <div class="space-y-2">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">당신의 <span class="text-[#4A9EA8]">지역</span>을<br>탐색해보세요</h1>
+                <p class="text-gray-500 text-lg">내가 사는 곳의 청년 정책을 가장 쉽고 빠르게.</p>
+            </div>
+            <div class="flex flex-col gap-3 w-full max-w-xs mx-auto">
+                <button id="btn-start" class="w-full py-4 bg-[#4A9EA8] hover:bg-[#3b858e] text-white font-bold rounded-xl shadow-lg shadow-teal-500/30 transition-all hover:-translate-y-1 text-lg flex items-center justify-center gap-2">
+                    <span>지도에서 지역 찾기</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </button>
+            </div>
+            <div class="pt-4 border-t border-gray-200 w-full max-w-xs mx-auto">
+                <p class="text-sm text-gray-500 mb-2">이미 나만의 구역이 있으신가요?</p>
+                <button id="btn-intro-login" class="text-[#4A9EA8] font-bold hover:underline text-base js-login-trigger" data-mode="login">기존 회원 로그인 &rarr;</button>
+            </div>
+        </div>
+    </div>
+
+    {% with btn_class="bg-[#4A9EA8] hover:bg-[#3b858e]" %}
+        {% include "components/auth_modal.html" %}
+    {% endwith %}
+
+    <div id="back-nav" class="fixed top-6 left-6 z-50 hidden">
+        <button onclick="window.location.href='/'" class="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur rounded-full shadow-lg border border-gray-100 hover:bg-[#4A9EA8] hover:text-white transition-all group cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            <span class="font-bold text-sm">전국지도 보기</span>
+        </button>
+    </div>
+
+    <div id="info-tooltip">
+        <div class="tooltip-line"></div>
+        <div class="tooltip-content"><span class="tooltip-badge">Region</span><h3 class="tooltip-title">지역명</h3><p class="tooltip-count">데이터 : <span>0</span>건</p></div>
+    </div>
+
+    <div id="main-content" class="relative w-full h-full flex flex-col items-center justify-center opacity-0 hidden p-4">
+        <header class="text-center z-10 flex-none mb-6 md:mb-10 pointer-events-none">
+            <h1 class="text-3xl md:text-4xl font-bold tracking-tighter mb-2" id="header-title">쓱쓱 프로젝트</h1>
+            <p class="text-sm md:text-base text-gray-500" id="header-desc">지도를 클릭하여 지역별 뉴스를 확인하세요</p>
+        </header>
+        <main id="svg-container" class="w-full max-w-5xl flex items-center justify-center flex-1"></main>
+    </div>
+
+    <script src="/static/script.js"></script>
+
+    <script>
+        const REGION_DATA = {
+            'national': { mapPath: '/static/images/map.svg', title: '전국 소식', desc: '지도를 클릭하여 지역별 뉴스를 확인하세요', db: { 'metropolitan': { name: '서울/경기/인천', count: 4250 }, 'chungnam': { name: '충남/대전/세종', count: 589 }, 'jeonnam': { name: '전남/광주', count: 340 }, 'gyeongbug': { name: '경북/대구', count: 781 }, 'gyeongnam': { name: '경남/부산/울산', count: 890 }, 'gangwon': { name: '강원도', count: 231 }, 'chungbug': { name: '충청북도', count: 412 }, 'jeonbug': { name: '전라북도', count: 620 }, 'jeju': { name: '제주특별자치도', count: 156 } }, leftSideIds: ['metropolitan', 'chungnam', 'jeonbug', 'jeonnam', 'jeju'] },
+            'metropolitan': { mapPath: '/static/images/total_metropolitan.svg', title: '수도권 상세', desc: '지역을 선택하세요', db: { 'detail_seoul': { name: '서울특별시', count: 1200 }, 'detail_incheon': { name: '인천광역시', count: 450 }, 'detail_gyeonggi': { name: '경기도', count: 2100 } } },
+            'chungnam': { mapPath: '/static/images/total_chungnam.svg', title: '충남/대전/세종 상세', desc: '지역을 선택하세요', db: { 'detail_daejun': { name: '대전광역시', count: 320 }, 'detail_saejong': { name: '세종특별자치시', count: 150 }, 'detail_chungnam': { name: '충청남도', count: 480 } } },
+            'jeonnam': { mapPath: '/static/images/total_jeonnam.svg', title: '전남/광주 상세', desc: '지역을 선택하세요', db: { 'detail_gwangju': { name: '광주광역시', count: 290 }, 'detail_jeonnam': { name: '전라남도', count: 310 } } },
+            'gyeongbug': { mapPath: '/static/images/total_gyeongbug.svg', title: '경북/대구 상세', desc: '지역을 선택하세요', db: { 'detail_daegu': { name: '대구광역시', count: 410 }, 'detail_gyeongbug': { name: '경상북도', count: 520 } } },
+            'gyeongnam': { mapPath: '/static/images/total_gyeongnam.svg', title: '경남/부산/울산', desc: '지역을 선택하세요', db: { 'detail_busan': { name: '부산광역시', count: 680 }, 'detail_ulsan': { name: '울산광역시', count: 210 }, 'detail_gyeongnam': { name: '경상남도', count: 550 } } }
+        };
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentRegionKey = urlParams.get('region') || 'national';
+        const currentConfig = REGION_DATA[currentRegionKey] || REGION_DATA['national'];
+        const isDetailMode = currentRegionKey !== 'national';
+        let isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'; // script.js와 맞춤
+
+        function initMapEvents() {
+            const svgElement = document.querySelector('#svg-container svg');
+            if (!svgElement) return;
+            svgElement.removeAttribute('width'); svgElement.removeAttribute('height');
+            const tooltip = document.querySelector('#info-tooltip');
+            const tTitle = tooltip.querySelector('.tooltip-title');
+            const tCountSpan = tooltip.querySelector('.tooltip-count span');
+            const overlay = document.getElementById('transition-overlay');
+            const activeIds = Object.keys(currentConfig.db);
+            const allElements = svgElement.querySelectorAll('g, path');
+            let tooltipTimeline = null;
+
+            allElements.forEach(element => {
+                const rawId = element.id || '';
+                const regionId = rawId.trim();
+                if (!regionId) return;
+                if (!isDetailMode && regionId.endsWith('_st')) return; 
+                if (isDetailMode && (regionId.startsWith('total_') || regionId.includes('.svg'))) return; 
+                if (regionId.toLowerCase().includes('lm')) { element.classList.add('landmark-piece'); return; }
+
+                if (activeIds.includes(regionId)) {
+                    element.classList.add('puzzle-piece');
+                    element.addEventListener('mouseenter', function() {
+                        if (this.tagName.toLowerCase() === 'path' || this.tagName.toLowerCase() === 'g') this.parentNode.appendChild(this);
+                        const data = currentConfig.db[regionId] || { name: 'Unknown', count: 0 };
+                        tTitle.innerText = data.name; tCountSpan.innerText = data.count.toLocaleString();
+                        tooltip.style.display = 'flex';
+                        const rect = element.getBoundingClientRect();
+                        const isLeft = (!isDetailMode) ? (currentConfig.leftSideIds || []).includes(regionId) : (rect.left + rect.width/2) < (window.innerWidth / 2);
+                        const tLine = tooltip.querySelector('.tooltip-line'); const tContent = tooltip.querySelector('.tooltip-content');
+                        if (isLeft) {
+                            tooltip.style.flexDirection = 'row-reverse'; tLine.style.marginRight = '0px'; tLine.style.marginLeft = '10px'; tLine.style.transformOrigin = 'right center';
+                            tContent.style.alignItems = 'flex-end';
+                            tooltip.style.left = 'auto'; tooltip.style.right = `${window.innerWidth - (rect.left + rect.width*0.2)}px`; tooltip.style.top = `${rect.top + rect.height*0.3}px`;
+                        } else {
+                            tooltip.style.flexDirection = 'row'; tLine.style.marginRight = '10px'; tLine.style.marginLeft = '0px'; tLine.style.transformOrigin = 'left center';
+                            tContent.style.alignItems = 'flex-start';
+                            tooltip.style.right = 'auto'; tooltip.style.left = `${rect.right - rect.width*0.2}px`; tooltip.style.top = `${rect.top + rect.height*0.3}px`;
+                        }
+                        if (tooltipTimeline) tooltipTimeline.kill();
+                        tooltipTimeline = gsap.timeline();
+                        tooltipTimeline.set(tLine, { width: 0 }).set(tContent, { opacity: 0, y: 10 }).to(tLine, { width: 80, duration: 0.4, ease: "power2.out" }).to(tContent, { opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.7)" }, "-=0.2");
+                    });
+                    element.addEventListener('mouseleave', function() { if (tooltipTimeline) tooltipTimeline.kill(); tooltip.style.display = 'none'; });
+
+                    element.addEventListener('click', (e) => {
+                        e.stopPropagation(); tooltip.style.display = 'none';
+                        const data = currentConfig.db[regionId];
+                        const hasDetailMap = REGION_DATA.hasOwnProperty(regionId);
+                        const targetUrl = `main.html?region=${regionId}&anim=1`;
+
+                        if (!isDetailMode && hasDetailMap) {
+                            performTransition(() => { window.location.search = `?region=${regionId}`; });
+                            return; 
+                        }
+                        
+                        if (isLoggedIn) {
+                            performTransition(() => { window.location.href = targetUrl; });
+                        } else {
+                            // [수정] script.js의 AuthController 사용
+                            if (window.openAuthModal) {
+                                window.openAuthModal('promo', data.name, data.count, () => {
+                                    performTransition(() => { window.location.href = targetUrl; });
+                                });
+                            } else {
+                                // Fallback
+                                performTransition(() => { window.location.href = targetUrl; });
+                            }
+                        }
+                    });
+                } else { element.classList.add('region-disabled'); }
+            });
+
+            function performTransition(callback) {
+                gsap.timeline().to("#svg-container", { scale: 5, opacity: 0, duration: 0.8, ease: "power4.in" }).to(overlay, { opacity: 1, duration: 0.5 }, "<0.3").to({}, { onComplete: callback });
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const mainContent = document.getElementById('main-content'); const introGate = document.getElementById('intro-gate'); const introContent = document.getElementById('intro-content'); const btnStart = document.getElementById('btn-start'); const btnIntroLogin = document.getElementById('btn-intro-login'); const backNav = document.getElementById('back-nav'); const headerTitle = document.getElementById('header-title'); const headerDesc = document.getElementById('header-desc');
+
+            headerTitle.innerText = `Sseuk-Sseuk : ${currentConfig.title}`;
+            headerDesc.innerText = currentConfig.desc;
+            const hasVisited = sessionStorage.getItem('sseuk_intro_visited');
+
+            if (isDetailMode || hasVisited || isLoggedIn) {
+                introGate.classList.add('hidden');
+                if (isDetailMode) backNav.classList.remove('hidden');
+                mainContent.classList.remove('hidden'); mainContent.style.opacity = 1;
+            } else {
+                introGate.classList.remove('hidden'); introGate.classList.add('flex');
+                gsap.to(introContent, { opacity: 1, y: 0, duration: 0.8, ease: "back.out(1.7)", delay: 0.2 });
+                btnStart.addEventListener('click', () => { sessionStorage.setItem('sseuk_intro_visited', 'true'); gsap.to(introGate, { opacity: 0, duration: 0.8, ease: "power2.inOut", onComplete: () => { introGate.style.display = 'none'; } }); });
+            }
+
+            fetch(currentConfig.mapPath).then(res => { if(!res.ok) throw new Error("Map file error"); return res.text(); }).then(text => { document.getElementById('svg-container').innerHTML = text; initMapEvents(); if(!introGate.classList.contains('hidden')) { mainContent.classList.remove('hidden'); gsap.to(mainContent, { opacity: 1, duration: 0.5 }); } }).catch(err => { console.error(err); document.getElementById('svg-container').innerHTML = "<p class='text-red-500'>지도를 불러오지 못했습니다.</p>"; });
+        });
+    </script>
+</body>
+</html>

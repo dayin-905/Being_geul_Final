@@ -1,0 +1,497 @@
+/* ==================== Reset & Global ==================== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    /* Pretendard Variable 사용 시 폰트 패밀리 명시 */
+    font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    line-height: 1.5;
+    background-color: var(--color-bg-light);
+    color: var(--color-text-main);
+    overflow-x: hidden;
+    min-width: var(--min-width);
+    overscroll-behavior-y: none;
+}
+
+a { text-decoration: none; color: inherit; }
+ul, ol { list-style: none; }
+img { max-width: 100%; display: block; object-fit: cover; }
+
+:root {
+    --color-primary-orange: #F48245;
+    --color-primary-teal:   #4A9EA8;
+    --color-primary-beige:  #D9B36C;
+    --color-primary-red:    #FF5A5F;
+    --color-card-news:      #F6F6F7;
+    --color-bg-light:       #FFFFFF;
+    --color-text-main:      #000000;
+    --color-text-sub:       #666666;
+    --search-bg: #222222;
+    --search-blue: #007AFF;
+    --section-gap: 80px;
+    --max-width: 1200px;
+    --min-width: 375px;
+    --nav-height: 80px;
+    --font-h1: 48px;
+    --font-h2: 32px;
+    --font-h3: 24px;
+    --font-p:  18px;
+}
+
+/* ==================== Navigation ==================== */
+/* Tailwind CSS 적용으로 인해 기존 CSS는 주석 처리됨 */
+/*.navigation { width: 100%; height: var(--nav-height); background-color: #fff; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid #eee; display: flex; justify-content: center; }
+.nav-inner { width: 100%; max-width: var(--max-width); padding: 0 20px; display: flex; justify-content: space-between; align-items: center; }
+.logo-area { display: flex; align-items: center; }*/
+.logo-img { height: 40px; width: auto; }
+/*.nav-pills { display: flex; gap: 12px; }
+.nav-item a { display: flex; align-items: center; justify-content: center; padding: 8px 20px; border-radius: 30px; font-weight: 700; font-size: 15px; transition: transform 0.2s ease, opacity 0.2s; color: #000; }*/
+.nav-item a:hover { transform: translateY(-2px); opacity: 0.9; }
+.nav-item.home a { background-color: var(--color-primary-teal); }
+.nav-item.mypage a { background-color: var(--color-primary-orange); }
+.nav-item.about a { background-color: var(--color-primary-beige); }
+
+/* ==================== Header & Common Layout ==================== */
+/* Tailwind 리셋 방지를 위해 !important 사용 */
+h1 { 
+    font-size: var(--font-h1) !important; 
+    font-weight: 800 !important; 
+    margin-bottom: 20px; 
+    letter-spacing: -1px; 
+}
+
+h2 { 
+    font-size: var(--font-h2) !important; 
+    font-weight: 700 !important; 
+    margin-bottom: 15px; 
+    letter-spacing: -0.5px; 
+}
+
+h3 { 
+    font-size: var(--font-h3) !important; 
+    font-weight: 700 !important; 
+}
+
+p { 
+    font-size: var(--font-p) !important; 
+    color: var(--color-text-sub); 
+}
+
+.body-container { width: 100%; max-width: var(--max-width); margin: 0 auto; padding: 0 20px; }
+
+.header-section { 
+    margin-bottom: var(--section-gap); 
+    width: 100%; 
+    padding-top: 40px; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 40px; 
+}
+
+.header-content-wrapper { 
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between; 
+    gap: 40px; 
+    text-align: left;
+}
+
+.header-text { 
+    flex: 1; 
+}
+
+.header-image { flex: 1; display: flex; justify-content: flex-end; }
+.header-image img { max-width: 100%; max-height: 400px; border-radius: 20px; object-fit: contain; }
+
+.dvline { width: 100%; padding: 20px 10px; border-top: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 14px; color: #333; flex-wrap: wrap; gap: 15px; }
+.dv-item { display: flex; align-items: center; }
+.pink-bullet::before { content: ''; display: inline-block; width: 10px; height: 10px; background-color: #FFC0CB; margin-right: 8px; border-radius: 2px; }
+
+/* ==================== Main Page Specific (Tinder Section) ==================== */
+.tinder-section .section-title { margin-bottom: 40px; text-align: center;}
+
+/* [수정] 컨테이너 높이 확대 (카드 회전 고려) */
+.swiper-container { 
+    width: 100%; 
+    height: 650px; 
+    position: relative; 
+    display: flex; 
+    justify-content: center; 
+    overflow: visible; 
+    padding-top: 20px;
+}
+
+/* [수정] 카드 스택 크기 확대 (400x600) */
+.card-stack { 
+    width: 400px; 
+    height: 600px; 
+    position: relative; 
+    max-width: 90vw; 
+}
+
+.policy-card { background-color: var(--color-card-news); border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; border: none; cursor: pointer; }
+
+/* [수정] 틴더 카드 스타일 (라운딩, 그림자 강화) */
+.tinder-card { 
+    width: 100%; 
+    height: 100%; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    background-color: var(--color-card-news); 
+    border-radius: 30px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15); 
+    cursor: grab; 
+    user-select: none; 
+    touch-action: none; 
+    display: flex; 
+    flex-direction: column; 
+    will-change: transform, opacity; 
+    transform-origin: 50% 100%; 
+    overflow: hidden; 
+}
+.tinder-card:active { cursor: grabbing; }
+
+.swipe-icon { position: absolute; top: 50%; transform: translateY(-50%); width: 80px; height: 80px; background-color: #fff; border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); opacity: 0; transition: opacity 0.2s ease; z-index: 10; }
+.swipe-icon i { font-size: 40px; }
+.swipe-icon.left { left: -100px; color: var(--color-primary-teal); }
+.swipe-icon.right { right: -100px; color: var(--color-primary-red); }
+.card-content { padding: 24px 24px 10px 24px; display: flex; flex-direction: column; gap: 10px; flex-grow: 1; order: -1; }
+.card-image { width: 100%; height: 180px; background-color: transparent; position: relative; display: flex; align-items: flex-end; }
+.card-image img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; }
+.card-title { font-size: 20px; font-weight: 800; line-height: 1.3; color: #222; }
+.card-desc { font-size: 14px; color: #666; font-weight: 500; }
+.card-date { font-size: 13px; color: #888; margin-top: 10px; }
+.no-more-cards { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.2rem; font-weight: bold; color: #aaa; width: 100%; text-align: center; z-index: 0; }
+
+.search-section { background-color: var(--color-bg-light); text-align: center; padding: 40px 0; }
+.search-bar-container { margin-top: 30px; background-color: var(--search-bg); border-radius: 60px; padding: 8px; display: inline-flex; align-items: center; width: 100%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+.icon-area { background-color: var(--search-blue); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 18px; flex-shrink: 0; }
+#search-input { background: transparent; border: none; color: white; font-size: 16px; padding: 0 20px; flex-grow: 1; outline: none; }
+#search-btn { background-color: white; color: black; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 800; font-size: 14px; cursor: pointer; transition: 0.2s; }
+
+.marquee-wrapper { display: flex; flex-direction: column; gap: 30px; overflow: hidden; padding: 20px 0; width: 100%; max-width: 100%; }
+.marquee-row { display: flex; gap: 24px; width: max-content; }
+.marquee-row .policy-card { width: 280px; height: 380px; flex-shrink: 0; transition: transform 0.2s; max-width: 90vw; }
+.marquee-row .policy-card:hover { transform: scale(1.05); }
+.marquee-row .card-image { height: 160px; }
+@keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+@keyframes scroll-right { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+.scroll-left { animation: scroll-left 40s linear infinite; }
+.scroll-right { animation: scroll-right 45s linear infinite; }
+.marquee-area { background-color: var(--color-primary-teal); color: white; padding: 15px 0; overflow: hidden; white-space: nowrap; }
+.track { display: inline-block; animation: marquee 20s linear infinite; font-size: 18px; font-weight: bold; }
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+.membership-section { text-align: center; background-color: #fff; padding: 60px 0 0 0; }
+.membership-content { display: flex; flex-direction: column; align-items: center; gap: 30px; }
+.membership-content h2 { font-size: 32px; line-height: 1.4; word-break: keep-all; }
+.membership-btns { display: flex; gap: 15px; flex-direction: row; }
+.btn-primary-red { background-color: var(--color-primary-red); color: #fff; border: none; padding: 14px 40px; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(255, 90, 95, 0.3); }
+.btn-primary-red:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(255, 90, 95, 0.4); }
+.btn-secondary-white { background-color: #fff; color: #333; border: 1px solid #ddd; padding: 14px 40px; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.btn-secondary-white:hover { background-color: #f9f9f9; border-color: #ccc; }
+.membership-img { margin-top: 20px; width: 100%; max-width: 600px; display: flex; justify-content: center; }
+
+/* ==================== My Page Styles ==================== */
+.mypage-container { padding-top: 40px; padding-bottom: 40px; display: flex; flex-direction: column; gap: 60px; }
+.header2-style { margin-bottom: 60px; border-bottom: none; }
+.header2-style h1 { font-size: 42px; }
+.analysis-section:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+.analysis-text { margin-bottom: 20px; }
+.analysis-text h2 { font-size: 24px; margin-bottom: 8px; color: #333; }
+.analysis-text p { font-size: 15px; color: #777; word-break: keep-all; }
+.analysis-image img { width: 100%; height: auto; object-fit: contain; }
+.profile-image img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--color-primary-orange); }
+.profile-info h2 { font-size: 24px; margin-bottom: 5px; }
+.profile-email { color: #888; margin-bottom: 15px; }
+.profile-tags { display: flex; gap: 8px; margin-bottom: 15px; }
+.profile-tags span { background-color: var(--color-card-news); color: #555; padding: 4px 12px; border-radius: 15px; font-size: 13px; font-weight: 600; }
+.btn-edit-profile { padding: 8px 16px; border: 1px solid #ddd; background: #fff; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+.btn-edit-profile:hover { background-color: #f9f9f9; border-color: #bbb; }
+.stat-label { font-size: 14px; color: #888; margin-bottom: 10px; }
+.stat-value { font-size: 32px; font-weight: 800; }
+.text-red { color: var(--color-primary-red); }
+.text-teal { color: var(--color-primary-teal); }
+.text-orange { color: var(--color-primary-orange); }
+.liked-policies-section .section-header { margin-bottom: 30px; }
+.policy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; width: 100%; }
+.policy-grid .policy-card { height: auto; box-shadow: 0 2px 10px rgba(0,0,0,0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.policy-grid .policy-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+.empty-state { grid-column: 1 / -1; text-align: center; padding: 60px 0; color: #999; background-color: #f9f9f9; border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.empty-state i { font-size: 40px; margin-bottom: 10px; color: #ddd; }
+
+/* ==================== Modal (Common) ==================== */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7); z-index: 2000; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+.modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+/* [수정] 모달 콘텐츠: 너비 줄이고 높이 유동적 (카드 비율 대응) */
+.modal-content { 
+    background-color: #fff; 
+    width: 90%; 
+    max-width: 450px; 
+    max-height: 85vh; 
+    overflow-y: auto;
+    border-radius: 30px; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3); 
+    transform: translateY(20px); 
+    transition: transform 0.3s ease; 
+    display: flex; 
+    flex-direction: column; 
+}
+.modal-overlay.active .modal-content { transform: translateY(0); }
+
+.small-modal { max-width: 400px; }
+.modal-header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { font-size: 18px; font-weight: 800; margin: 0; }
+.close-icon-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: #999; }
+.form-body { padding: 30px; display: flex; flex-direction: column; gap: 15px; }
+.form-desc { font-size: 14px; color: #666; text-align: center; margin-bottom: 10px; }
+.modal-input { padding: 12px 15px; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; }
+.modal-input:focus { outline: none; border-color: var(--color-primary-orange); }
+.url-box { display: flex; gap: 10px; }
+#share-url-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; color: #666; font-size: 14px; }
+.copy-btn { padding: 0 20px; border: none; background: #333; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+/* [수정] 모달 이미지 높이 확대 */
+.modal-image { 
+    width: 100%; 
+    height: 350px; 
+    background-color: var(--color-card-news); 
+    position: relative; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+}
+.modal-image img { width: 100%; height: 100%; object-fit: cover; }
+
+.modal-tag { position: absolute; top: 20px; left: 20px; background-color: rgba(0,0,0,0.7); color: #fff; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+
+.modal-body { padding: 30px; display: flex; flex-direction: column; gap: 15px; }
+
+/* [수정] 모달 타이틀/본문 폰트 키움 */
+#modal-title { font-size: 28px; font-weight: 800; line-height: 1.3; margin-bottom: 0;}
+#modal-desc { color: #444; font-size: 17px; line-height: 1.6; }
+
+.modal-actions { margin-top: 20px; display: flex; gap: 15px; justify-content: space-between; }
+.action-btn { padding: 12px 20px; border-radius: 50px; border: none; font-weight: 700; font-size: 16px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.back-btn { flex: 1; background-color: #eee; color: #333; }
+.back-btn:hover { background-color: #ddd; }
+.heart-btn { width: 50px; height: 50px; border-radius: 50%; background-color: white; border: 2px solid var(--color-primary-red); color: var(--color-primary-red); padding: 0; }
+.heart-btn:hover { background-color: var(--color-primary-red); color: white; }
+.heart-btn.active { background-color: var(--color-primary-red); color: white; }
+
+/* ==================== Responsive ==================== */
+@media screen and (max-width: 1024px) {
+    :root { --font-h1: 40px; --font-h2: 28px; --font-h3: 22px; --font-p: 16px; --section-gap: 60px; }
+    .header-content-wrapper { flex-direction: column; text-align: center; }
+    .header-text { order: 1; }
+    .header-image { order: 2; justify-content: center; width: 100%; }
+    .profile-section { flex-direction: column; gap: 20px; }
+    .profile-card, .dashboard-stats { width: 100%; }
+}
+
+@media screen and (max-width: 768px) {
+    :root { --font-h1: 32px; --font-h2: 24px; --font-h3: 20px; --font-p: 15px; --section-gap: 40px; }
+    .analysis-wrapper { flex-direction: column; }
+}
+
+@media screen and (max-width: 600px) {
+    .nav-pills { gap: 8px; } .nav-item a { padding: 6px 14px; font-size: 13px; }
+    .membership-btns { flex-direction: column; width: 100%; max-width: 280px; }
+    .dvline { justify-content: center; gap: 10px; } .long-text { display: none; }
+    .profile-card { flex-direction: column; text-align: center; padding: 20px; }
+    .profile-info { width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .dashboard-stats { gap: 10px; }
+    .stat-value { font-size: 24px; }
+    .policy-grid { grid-template-columns: 1fr; }
+}
+
+/* ==================== About Page Styles ==================== */
+.about-container { padding-top: 60px; padding-bottom: 60px; display: flex; flex-direction: column; gap: 80px; }
+.about-title { font-size: 56px; font-weight: 800 !important; text-align: center; margin-bottom: 40px; letter-spacing: -1px; }
+.about-intro-wrapper { display: flex; gap: 50px; align-items: flex-start; }
+.video-placeholder { flex: 1.2; background-color: #FFE4E1; aspect-ratio: 16 / 9; border-radius: 0; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; transition: transform 0.2s ease; }
+.video-placeholder:hover { transform: scale(1.02); }
+.play-button { width: 60px; height: 40px; background-color: red; border-radius: 10px; display: flex; justify-content: center; align-items: center; color: white; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+.contact-info { flex: 0.8; padding-top: 20px; }
+.contact-info h3 { font-size: 24px; font-weight: 800; margin-bottom: 20px; }
+.contact-desc { font-size: 16px; line-height: 1.6; margin-bottom: 30px; color: #444; }
+.contact-details p { font-size: 15px; margin-bottom: 8px; color: #333; }
+.contact-details .highlight { margin-top: 20px; font-weight: 700; color: var(--color-primary-teal); background-color: #f0fdf4; padding: 8px 12px; border-radius: 8px; display: inline-block; }
+.section-title-left { font-size: 32px; font-weight: 800; margin-bottom: 40px; }
+.team-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px 20px; }
+.team-card { display: flex; flex-direction: column; align-items: flex-start; gap: 15px; }
+.team-img { width: 100%; aspect-ratio: 1 / 1; overflow: hidden; display: flex; align-items: flex-end; justify-content: center; }
+.team-img img { width: 100%; height: 100%; object-fit: contain; transition: transform 0.3s ease; }
+.team-card:hover .team-img img { transform: scale(1.05); }
+.team-info h3 { font-size: 18px; font-weight: 700; margin: 0; }
+.team-info p { font-size: 14px; color: #777; margin: 0; }
+.footer-section { width: 100%; border-top: 1px solid #eee; padding-top: 0; margin-top: 40px; }
+.footer-section img { width: 100%; height: auto; max-height: 300px; object-fit: cover; object-position: bottom; display: block; }
+@media screen and (max-width: 1024px) {
+    .about-intro-wrapper { flex-direction: column; gap: 30px; }
+    .video-placeholder, .contact-info { width: 100%; flex: none; }
+    .team-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media screen and (max-width: 600px) {
+    .about-title { font-size: 40px; }
+    .team-grid { grid-template-columns: repeat(2, 1fr); gap: 20px 10px; }
+    .team-info h3 { font-size: 16px; }
+    .team-info p { font-size: 12px; }
+}
+
+/* ==================== Custom Effects (Aurora & Mask) ==================== */
+
+/* 1. 애니메이션 동작 정의 */
+@keyframes aurora-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* 2. 오로라 배경 (Green & Purple ver) */
+.bg-aurora {
+    /* 요청하신 초록(Green) & 보라(Purple) 위주의 신비로운 그라디언트 */
+    background: linear-gradient(-45deg, #4c1d95, #059669, #0ea5e9, #2e1065);
+    background-size: 400% 400%;
+    animation: aurora-shift 15s ease infinite;
+    position: relative;
+}
+
+.bg-aurora::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+    opacity: 0.15;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+}
+
+/* 3. 비디오 마스크 (투명 그라데이션) */
+.mask-image-gradient {
+    /* 중앙은 선명하게, 가장자리는 투명하게 */
+    -webkit-mask-image: radial-gradient(circle at center, black 50%, transparent 95%);
+    mask-image: radial-gradient(circle at center, black 50%, transparent 95%);
+    
+    /* 그림자/테두리 제거 */
+    box-shadow: none !important; 
+    border: none !important;
+    border-radius: 0; 
+}
+
+/* ==================== All Page (Newsfeed) Styles ==================== */
+.newsfeed-container {
+    column-count: 2;
+    column-gap: 1.5rem;
+}
+
+@media (min-width: 768px) { 
+    .newsfeed-container { column-count: 3; } 
+}
+@media (min-width: 1280px) { 
+    .newsfeed-container { column-count: 4; } 
+}
+
+.news-card {
+    break-inside: avoid;
+    margin-bottom: 1.5rem;
+}
+
+/* ==================== All Policies Page (Newsfeed Style) ==================== */
+/* 주의: mypage의 .masonry-grid와 겹치지 않도록 고유한 이름 사용 */
+
+/* 1. 뉴스피드 그리드 컨테이너 */
+.newsfeed-container {
+    column-count: 2; /* 모바일 기본 2열 */
+    column-gap: 1.5rem;
+    width: 100%;
+}
+
+/* 태블릿 (3열) */
+@media (min-width: 768px) {
+    .newsfeed-container {
+        column-count: 3;
+    }
+}
+
+/* PC/대화면 (4열) */
+@media (min-width: 1280px) {
+    .newsfeed-container {
+        column-count: 4;
+    }
+}
+
+/* 2. 뉴스피드 카드 아이템 */
+.news-card {
+    break-inside: avoid; /* 카드가 중간에 잘리지 않도록 보호 */
+    margin-bottom: 1.5rem; /* 카드 사이 아래 간격 */
+    position: relative;
+    display: block;
+}
+
+/* 3. 유틸리티: 가로 스크롤바 숨기기 (필터 버튼용) */
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+/* ==================== All Page 3D Card Override (최종 수정) ==================== */
+
+/* 1. 무대 설정 */
+.perspective-wrap {
+    perspective: 600px; /* 다이내믹한 원근감 */
+    position: relative;
+    z-index: 1; 
+    cursor: pointer;
+    height: 380px; /* 레이아웃 깨짐 방지 */
+}
+
+/* 호버 시 z-index 최상단 (다른 카드 위로 올라오게) */
+.perspective-wrap:hover {
+    z-index: 9999 !important; 
+}
+
+/* 2. GSAP 제어 카드 (.is-3d) - CSS 간섭 완전 차단 */
+.policy-card.is-3d {
+    /* [핵심 1] 모든 CSS 애니메이션 속성을 0초로 만들어버림 */
+    transition: none !important; 
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    
+    /* 3D 렌더링 최적화 */
+    transform-style: preserve-3d;
+    will-change: transform, box-shadow;
+}
+
+/* 3. CSS 호버 효과 '얼음' 현상 제거 */
+/* 기존 .policy-card:hover에 있는 'transform: translateY(-10px)' 등을 무력화 */
+.policy-card.is-3d:hover {
+    transform: none !important; 
+    margin: 0 !important; /* 마진으로 움직이는 경우 방지 */
+    animation: none !important; /* 혹시 모를 키프레임 애니메이션 제거 */
+}
+
+/* 4. 부모 요소 간섭 방지 (group-hover 등) */
+.group:hover .policy-card.is-3d {
+    transform: none !important;
+}
+
+/* 5. 광택 효과 */
+.card-glare {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 50;
+    mix-blend-mode: overlay;
+    border-radius: 20px;
+}
+
+body.menu-open {
+    overflow: hidden;
+}

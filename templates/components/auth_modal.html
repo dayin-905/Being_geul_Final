@@ -1,0 +1,112 @@
+<div id="auth-modal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 hidden opacity-0 transition-opacity duration-300" aria-hidden="true">
+    <div class="bg-white rounded-3xl shadow-2xl p-8 max-w-[400px] w-full mx-4 transform scale-95 transition-transform duration-300 relative overflow-hidden" id="auth-modal-content">
+        
+        <button id="btn-modal-close-icon" class="absolute top-5 right-5 text-gray-400 hover:text-gray-600 z-10 p-1 hover:bg-gray-100 rounded-full transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+        <div id="auth-view-promo" class="flex flex-col items-center text-center transition-all duration-300">
+            <div class="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </div>
+            
+            <h2 id="auth-promo-title" class="text-2xl font-bold text-gray-900 mb-2">반가워요! 👋</h2>
+            <p id="auth-promo-desc" class="text-gray-500 text-sm mb-8 leading-relaxed">
+                간편하게 로그인하고<br>나에게 딱 맞는 정책을 추천받으세요.
+            </p>
+
+            <div class="space-y-3 w-full">
+                <button id="btn-promo-signup" class="w-full py-3.5 {{ btn_class }} text-white font-bold rounded-xl shadow-lg transition-all hover:-translate-y-0.5">
+                    3초 만에 가입하고 보기 🚀
+                </button>
+                <button id="btn-promo-login" class="w-full py-3.5 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-colors">
+                    로그인
+                </button>
+            </div>
+        </div>
+
+        <div id="auth-view-signup" class="hidden flex-col items-center text-center transition-all duration-300">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2 mt-2">회원가입</h2>
+            <p class="text-gray-500 text-sm mb-6">SNS로 3초 만에 시작하세요.</p>
+            
+            <div class="w-full space-y-3 mb-6">
+                <button onclick="socialLogin('naver')" class="relative flex items-center justify-center w-full py-3 bg-[#03C75A] hover:bg-[#02b351] text-white rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md">
+                    <span class="font-bold text-sm">네이버로 시작하기</span>
+                </button>
+                <button onclick="socialLogin('google')" class="relative flex items-center justify-center w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-sm">
+                    <span class="font-bold text-sm">구글로 계속하기</span>
+                </button>
+            </div>
+
+            <div class="relative w-full flex items-center justify-center mb-6">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+                <div class="relative bg-white px-3 text-xs text-gray-400 font-medium">또는 이메일로 가입</div>
+            </div>
+
+            <div class="mb-2 inline-flex items-center gap-1.5 px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold border border-gray-200 mx-auto" id="signup-region-badge-container" style="display:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                <span id="signup-region-badge">지역명</span>
+            </div>
+
+            <div class="w-full space-y-3 mb-6">
+                <input type="text" id="signup-id" placeholder="사용할 아이디" class="auth-input">
+                <div class="relative w-full">
+                    <input type="password" id="signup-pw" placeholder="비밀번호 (4자리 이상)" class="auth-input pr-10">
+                </div>
+            </div>
+
+            <button id="btn-signup-submit" class="w-full py-3.5 {{ btn_class }} text-white font-bold rounded-xl shadow-lg transition-all hover:-translate-y-0.5">
+                가입 완료하기
+            </button>
+
+            <div class="mt-4 text-xs text-gray-500">
+                이미 계정이 있으신가요? 
+                <button id="btn-goto-login" class="font-bold underline hover:text-gray-800 ml-1">로그인</button>
+            </div>
+        </div>
+
+        <div id="auth-view-login" class="hidden flex-col items-center text-center transition-all duration-300">
+            <h2 class="text-2xl font-bold text-gray-900 mb-2 mt-2">로그인</h2>
+            <p class="text-gray-500 text-sm mb-6">소셜 계정으로 간편하게 시작하세요.</p>
+
+            <div class="w-full space-y-3 mb-6">
+                <button onclick="socialLogin('naver')" class="relative flex items-center justify-center w-full py-3 bg-[#03C75A] hover:bg-[#02b351] text-white rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md">
+                    <span class="font-bold text-sm">네이버로 로그인</span>
+                </button>
+                <button onclick="socialLogin('google')" class="relative flex items-center justify-center w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-sm">
+                    <span class="font-bold text-sm">구글로 로그인</span>
+                </button>
+            </div>
+
+            <div class="relative w-full flex items-center justify-center mb-6">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+                <div class="relative bg-white px-3 text-xs text-gray-400 font-medium">또는</div>
+            </div>
+
+            <div class="w-full space-y-3 mb-6">
+                <input type="text" id="login-id" placeholder="아이디" class="auth-input bg-gray-50 focus:bg-white">
+                <input type="password" id="login-pw" placeholder="비밀번호" class="auth-input bg-gray-50 focus:bg-white">
+            </div>
+
+            <button id="btn-login-submit" class="w-full py-3.5 bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-xl shadow-lg transition-all hover:-translate-y-0.5">
+                이메일로 로그인
+            </button>
+
+            <div class="mt-4 text-xs text-gray-500">
+                계정이 없으신가요? 
+                <button id="btn-goto-signup" class="font-bold underline hover:text-gray-800 ml-1">회원가입</button>
+            </div>
+        </div>
+        
+        <div id="modal-footer" class="mt-6 text-center">
+             <button id="btn-modal-browse" class="text-xs text-gray-400 font-medium hover:text-[#4A9EA8] transition-colors underline">
+                닫기
+            </button>
+        </div>
+    </div>
+</div>
