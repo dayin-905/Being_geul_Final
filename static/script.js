@@ -16,17 +16,17 @@ const categories = ["취업/직무", "창업/사업", "주거/자립", "금융/�
 // 데이터 생성 함수
 function generatePolicyData(count) {
     const categoryMap = { "취업/직무": "job", "창업/사업": "startup", "주거/자립": "housing", "금융/생활비": "finance", "교육/자격증": "growth", "복지/문화": "welfare" };
-    const categoryCounters = {}; 
+    const categoryCounters = {};
 
     const data = [];
     for (let i = 1; i <= count; i++) {
         const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-        
+
         if (categoryCounters[randomCategory] === undefined) categoryCounters[randomCategory] = 0;
         const imgNum = categoryCounters[randomCategory];
         const imgIndex = (imgNum % 5) + 1;
         categoryCounters[randomCategory]++;
-        
+
         const prefix = categoryMap[randomCategory] || "welfare";
         const localImage = `/static/images/card_images/${prefix}_${imgIndex}.webp`;
 
@@ -47,10 +47,11 @@ const tinderData = generatePolicyData(10);
 const allSlideData = generatePolicyData(30);
 const myLikedData = generatePolicyData(5);
 
-// 카드 HTML 생성 함수
+// 카드 HTML 생성 함수 (수정됨)
 function createCardHTML(item, isTinder = false) {
-    const itemData = encodeURIComponent(JSON.stringify(item));
-    
+    // [중요] JSON 객체를 HTML 속성에 넣기 위해 따옴표(")를 &quot;로 변환해야 깨지지 않습니다.
+    const jsonString = JSON.stringify(item).replace(/"/g, '&quot;');
+
     if (isTinder) {
         // [Tinder Card]
         const swipeIcons = `
@@ -80,8 +81,10 @@ function createCardHTML(item, isTinder = false) {
                     </div>
                     <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
                         <span class="card-date text-sm text-gray-400 font-bold"><i class="fa-regular fa-clock mr-1"></i> ${item.date}</span>
+                        
                         <button class="relative z-50 text-sm font-bold text-gray-900 underline decoration-gray-300 underline-offset-4 p-2 hover:text-primary-orange transition-colors" 
-                                onclick="openModal('${itemData}'); event.stopPropagation();">
+                                data-json="${jsonString}"
+                                onclick="openCardModal(this); event.stopPropagation();">
                             자세히 보기
                         </button>
                     </div>
@@ -90,7 +93,10 @@ function createCardHTML(item, isTinder = false) {
     } else {
         // [Slide Card]
         return `
-            <div class="policy-card relative flex flex-col overflow-hidden rounded-[20px] bg-[#F6F6F7] shadow-sm cursor-pointer hover:shadow-xl transition-all group hover:-translate-y-2 hover:bg-white" onclick="openModal('${itemData}')">
+            <div class="policy-card relative flex flex-col overflow-hidden rounded-[20px] bg-[#F6F6F7] shadow-sm cursor-pointer hover:shadow-xl transition-all group hover:-translate-y-2 hover:bg-white" 
+                 data-json="${jsonString}"
+                 onclick="openCardModal(this)">
+                
                 <div class="card-image w-full h-[180px] flex items-end justify-center overflow-hidden bg-white">
                     <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                 </div>
@@ -138,15 +144,15 @@ class CardSwiper {
             const rotate = currentX * 0.05;
             card.style.transform = `translateX(${currentX}px) rotate(${rotate}deg)`;
             const opacity = Math.min(Math.abs(currentX) / 100, 1);
-            if (currentX > 0) { if(likeBadge) likeBadge.style.opacity = opacity; if(passBadge) passBadge.style.opacity = 0; } 
-            else { if(passBadge) passBadge.style.opacity = opacity; if(likeBadge) likeBadge.style.opacity = 0; }
+            if (currentX > 0) { if (likeBadge) likeBadge.style.opacity = opacity; if (passBadge) passBadge.style.opacity = 0; }
+            else { if (passBadge) passBadge.style.opacity = opacity; if (likeBadge) likeBadge.style.opacity = 0; }
         };
         const endDrag = () => {
             if (!isDragging) return;
             isDragging = false;
             card.style.transition = 'transform 0.3s ease';
-            if(likeBadge) likeBadge.style.opacity = 0;
-            if(passBadge) passBadge.style.opacity = 0;
+            if (likeBadge) likeBadge.style.opacity = 0;
+            if (passBadge) passBadge.style.opacity = 0;
             if (currentX > 150) this.swipeCard(card, 'right');
             else if (currentX < -150) this.swipeCard(card, 'left');
             else card.style.transform = 'translateX(0) rotate(0)';
@@ -176,14 +182,14 @@ window.openModal = function (itemDataEncoded) {
     try {
         const item = JSON.parse(decodeURIComponent(itemDataEncoded));
         const els = { title: document.getElementById('modal-title'), desc: document.getElementById('modal-desc'), img: document.getElementById('modal-img'), cate: document.getElementById('modal-category'), date: document.getElementById('modal-date') };
-        if(els.title) els.title.innerText = item.title;
-        if(els.desc) els.desc.innerText = item.desc;
-        if(els.img) els.img.src = item.image;
-        if(els.cate) els.cate.innerText = item.category;
-        if(els.date) els.date.innerText = item.date;
+        if (els.title) els.title.innerText = item.title;
+        if (els.desc) els.desc.innerText = item.desc;
+        if (els.img) els.img.src = item.image;
+        if (els.cate) els.cate.innerText = item.category;
+        if (els.date) els.date.innerText = item.date;
         policyModalEl.classList.remove('hidden');
         setTimeout(() => { policyModalEl.classList.add('active'); }, 10);
-    } catch(e) { console.error("Data Error:", e); }
+    } catch (e) { console.error("Data Error:", e); }
 };
 
 // ============================================================
@@ -194,11 +200,11 @@ const AuthController = {
     targetRegionName: null,
     targetCallback: null,
 
-    init: function() { this.bindGlobalEvents(); },
+    init: function () { this.bindGlobalEvents(); },
 
-    open: function(mode = 'promo', regionName = null, count = 0, callback = null) {
+    open: function (mode = 'promo', regionName = null, count = 0, callback = null) {
         const modal = document.getElementById('auth-modal');
-        if(!modal) return;
+        if (!modal) return;
         this.targetRegionName = regionName;
         this.targetCallback = callback;
         this.updateUI(mode, regionName, count);
@@ -206,47 +212,47 @@ const AuthController = {
         setTimeout(() => {
             modal.classList.remove('opacity-0');
             const content = document.getElementById('auth-modal-content');
-            if(content) { content.classList.remove('scale-95'); content.classList.add('scale-100'); }
+            if (content) { content.classList.remove('scale-95'); content.classList.add('scale-100'); }
         }, 10);
     },
 
-    close: function() {
+    close: function () {
         const modal = document.getElementById('auth-modal');
-        if(!modal) return;
+        if (!modal) return;
         modal.classList.add('opacity-0');
         const content = document.getElementById('auth-modal-content');
-        if(content) { content.classList.remove('scale-100'); content.classList.add('scale-95'); }
+        if (content) { content.classList.remove('scale-100'); content.classList.add('scale-95'); }
         setTimeout(() => { modal.classList.add('hidden'); }, 300);
     },
 
-    updateUI: function(mode, regionName, count) {
+    updateUI: function (mode, regionName, count) {
         const views = { promo: document.getElementById('auth-view-promo'), signup: document.getElementById('auth-view-signup'), login: document.getElementById('auth-view-login') };
-        Object.values(views).forEach(el => { if(el) el.classList.add('hidden'); });
+        Object.values(views).forEach(el => { if (el) el.classList.add('hidden'); });
 
-        if(mode === 'login' && views.login) views.login.classList.remove('hidden');
-        else if(mode === 'signup' && views.signup) views.signup.classList.remove('hidden');
-        else if(views.promo) views.promo.classList.remove('hidden');
+        if (mode === 'login' && views.login) views.login.classList.remove('hidden');
+        else if (mode === 'signup' && views.signup) views.signup.classList.remove('hidden');
+        else if (views.promo) views.promo.classList.remove('hidden');
 
-        if(regionName) {
+        if (regionName) {
             const title = document.getElementById('auth-promo-title');
             const desc = document.getElementById('auth-promo-desc');
             const badge = document.getElementById('signup-region-badge');
             const badgeContainer = document.getElementById('signup-region-badge-container');
-            if(title) title.innerHTML = `<span class="text-[#4A9EA8]">${regionName}</span> 소식을<br>받아보시겠습니까?`;
-            if(desc) desc.innerHTML = `총 ${count ? count.toLocaleString() : 0}건의 청년 정책을<br>놓치지 말고 확인하세요.`;
-            if(badge) badge.innerText = regionName;
-            if(badgeContainer) badgeContainer.style.display = 'inline-flex';
+            if (title) title.innerHTML = `<span class="text-[#4A9EA8]">${regionName}</span> 소식을<br>받아보시겠습니까?`;
+            if (desc) desc.innerHTML = `총 ${count ? count.toLocaleString() : 0}건의 청년 정책을<br>놓치지 말고 확인하세요.`;
+            if (badge) badge.innerText = regionName;
+            if (badgeContainer) badgeContainer.style.display = 'inline-flex';
         } else {
-             const badgeContainer = document.getElementById('signup-region-badge-container');
-             if(badgeContainer) badgeContainer.style.display = 'none';
+            const badgeContainer = document.getElementById('signup-region-badge-container');
+            if (badgeContainer) badgeContainer.style.display = 'none';
         }
     },
 
-    bindGlobalEvents: function() {
+    bindGlobalEvents: function () {
         // 1. 트리거 버튼 (js-login-trigger) 이벤트 위임
         document.body.addEventListener('click', (e) => {
             const trigger = e.target.closest('.js-login-trigger');
-            if(trigger) {
+            if (trigger) {
                 const mode = trigger.dataset.mode || 'login';
                 this.open(mode);
             }
@@ -255,10 +261,10 @@ const AuthController = {
         // 2. 모달 내부 버튼 이벤트
         const closeBtn = document.getElementById('btn-modal-close-icon');
         const browseBtn = document.getElementById('btn-modal-browse');
-        
+
         const promoSignup = document.getElementById('btn-promo-signup');
         const promoLogin = document.getElementById('btn-promo-login');
-        
+
         const signupSubmit = document.getElementById('btn-signup-submit');
         const loginSubmit = document.getElementById('btn-login-submit');
 
@@ -266,24 +272,24 @@ const AuthController = {
         const gotoSignup = document.getElementById('btn-goto-signup');
         const gotoLogin = document.getElementById('btn-goto-login');
 
-        if(closeBtn) closeBtn.onclick = () => this.close();
-        if(browseBtn) browseBtn.onclick = () => {
+        if (closeBtn) closeBtn.onclick = () => this.close();
+        if (browseBtn) browseBtn.onclick = () => {
             this.close();
-            if(this.targetCallback) this.targetCallback(); 
+            if (this.targetCallback) this.targetCallback();
         };
-        
-        if(promoSignup) promoSignup.onclick = () => this.updateUI('signup', this.targetRegionName);
-        if(promoLogin) promoLogin.onclick = () => this.updateUI('login');
-        
+
+        if (promoSignup) promoSignup.onclick = () => this.updateUI('signup', this.targetRegionName);
+        if (promoLogin) promoLogin.onclick = () => this.updateUI('login');
+
         // [새로 추가된 전환 이벤트]
-        if(gotoSignup) gotoSignup.onclick = () => this.updateUI('signup', this.targetRegionName);
-        if(gotoLogin) gotoLogin.onclick = () => this.updateUI('login');
-        
-        if(signupSubmit) signupSubmit.onclick = () => this.handleAuthSuccess('가입');
-        if(loginSubmit) loginSubmit.onclick = () => this.handleAuthSuccess('로그인');
+        if (gotoSignup) gotoSignup.onclick = () => this.updateUI('signup', this.targetRegionName);
+        if (gotoLogin) gotoLogin.onclick = () => this.updateUI('login');
+
+        if (signupSubmit) signupSubmit.onclick = () => this.handleAuthSuccess('가입');
+        if (loginSubmit) loginSubmit.onclick = () => this.handleAuthSuccess('로그인');
     },
 
-    handleAuthSuccess: function(type) {
+    handleAuthSuccess: function (type) {
         alert(`${type} 되었습니다!`);
         localStorage.setItem('isLoggedIn', 'true');
         const emailInput = document.getElementById('login-id') || document.getElementById('signup-id');
@@ -291,7 +297,7 @@ const AuthController = {
         localStorage.setItem('virtualUser', email);
         this.close();
         checkLoginState();
-        if(this.targetCallback) { this.targetCallback(); } else { location.reload(); }
+        if (this.targetCallback) { this.targetCallback(); } else { location.reload(); }
     }
 };
 
@@ -301,41 +307,41 @@ const ShareController = {
     btnClose: document.getElementById('btn-share-close'),
     btnCopy: document.getElementById('btn-copy-url'),
 
-    init: function() { if (!this.el) return; this.bindEvents(); },
-    show: function() {
+    init: function () { if (!this.el) return; this.bindEvents(); },
+    show: function () {
         this.el.classList.remove('hidden');
-        if(this.input) this.input.value = window.location.href;
+        if (this.input) this.input.value = window.location.href;
         if (typeof gsap !== 'undefined') {
             gsap.to(this.el, { opacity: 1, duration: 0.3 });
-            const content = this.el.querySelector('div'); 
-            if(content) gsap.to(content, { scale: 1, duration: 0.3, ease: 'back.out(1.2)' });
+            const content = this.el.querySelector('div');
+            if (content) gsap.to(content, { scale: 1, duration: 0.3, ease: 'back.out(1.2)' });
         }
     },
-    hide: function() {
+    hide: function () {
         if (typeof gsap !== 'undefined') {
             const content = this.el.querySelector('div');
             gsap.to(this.el, { opacity: 0, duration: 0.2 });
-            if(content) {
-                gsap.to(content, { scale: 0.95, duration: 0.2, onComplete: () => { this.el.classList.add('hidden'); }});
+            if (content) {
+                gsap.to(content, { scale: 0.95, duration: 0.2, onComplete: () => { this.el.classList.add('hidden'); } });
             } else { setTimeout(() => this.el.classList.add('hidden'), 200); }
         } else { this.el.classList.add('hidden'); }
     },
-    copy: function() {
-        if(this.input) {
+    copy: function () {
+        if (this.input) {
             this.input.select();
             navigator.clipboard.writeText(this.input.value).then(() => {
                 alert("URL이 복사되었습니다! 🎉"); this.hide();
             }).catch(() => { alert("복사 실패."); });
         }
     },
-    bindEvents: function() {
-        if(this.btnClose) this.btnClose.onclick = () => this.hide();
-        if(this.btnCopy) this.btnCopy.onclick = () => this.copy();
-        this.el.addEventListener('click', (e) => { if(e.target === this.el) this.hide(); });
+    bindEvents: function () {
+        if (this.btnClose) this.btnClose.onclick = () => this.hide();
+        if (this.btnCopy) this.btnCopy.onclick = () => this.copy();
+        this.el.addEventListener('click', (e) => { if (e.target === this.el) this.hide(); });
     }
 };
 
-window.openAuthModal = function(mode, regionName, count, callback) { AuthController.open(mode, regionName, count, callback); };
+window.openAuthModal = function (mode, regionName, count, callback) { AuthController.open(mode, regionName, count, callback); };
 
 // ============================================================
 // [3] 초기화 및 메인 로직
@@ -365,14 +371,14 @@ function checkLoginState() {
             `;
         }
         const mobileLogout = document.getElementById('mobile-logout-area');
-        if(mobileLogout) mobileLogout.classList.remove('hidden');
-        
+        if (mobileLogout) mobileLogout.classList.remove('hidden');
+
         const introLoginBtn = document.getElementById('btn-intro-login');
-        if(introLoginBtn) introLoginBtn.style.display = 'none';
+        if (introLoginBtn) introLoginBtn.style.display = 'none';
     }
 }
 
-window.handleLogout = function() {
+window.handleLogout = function () {
     localStorage.removeItem('virtualUser');
     localStorage.removeItem('isLoggedIn');
     alert('로그아웃 되었습니다.');
@@ -389,24 +395,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeBtn = document.getElementById('close-btn');
     const menuOverlay = document.getElementById('mobile-menu-overlay');
     const menuPanel = document.getElementById('mobile-menu-panel');
-    const openMenu = () => { if(!menuOverlay) return; menuOverlay.classList.remove('hidden'); setTimeout(() => { menuOverlay.classList.remove('opacity-0'); menuPanel.classList.remove('translate-x-full'); }, 10); document.body.classList.add('menu-open'); };
-    const closeMenu = () => { if(!menuOverlay) return; menuOverlay.classList.add('opacity-0'); menuPanel.classList.add('translate-x-full'); document.body.classList.remove('menu-open'); setTimeout(() => { menuOverlay.classList.add('hidden'); }, 300); };
-    
+    const openMenu = () => { if (!menuOverlay) return; menuOverlay.classList.remove('hidden'); setTimeout(() => { menuOverlay.classList.remove('opacity-0'); menuPanel.classList.remove('translate-x-full'); }, 10); document.body.classList.add('menu-open'); };
+    const closeMenu = () => { if (!menuOverlay) return; menuOverlay.classList.add('opacity-0'); menuPanel.classList.add('translate-x-full'); document.body.classList.remove('menu-open'); setTimeout(() => { menuOverlay.classList.add('hidden'); }, 300); };
+
     if (hamburgerBtn) hamburgerBtn.addEventListener('click', openMenu);
     if (closeBtn) closeBtn.addEventListener('click', closeMenu);
-    if (menuOverlay) menuOverlay.addEventListener('click', (e) => { if(e.target === menuOverlay) closeMenu(); });
-    
+    if (menuOverlay) menuOverlay.addEventListener('click', (e) => { if (e.target === menuOverlay) closeMenu(); });
+
     const mobileLogoutBtn = document.getElementById('logout-btn-mobile');
     if (mobileLogoutBtn) mobileLogoutBtn.addEventListener('click', window.handleLogout);
 
     const btnShare = document.getElementById('btn-share');
-    if(btnShare) btnShare.addEventListener('click', () => ShareController.show());
+    if (btnShare) btnShare.addEventListener('click', () => ShareController.show());
 
     // --------------------------------------------------------
     // [MAIN PAGE] Animation Logic
     // --------------------------------------------------------
     if (window.location.pathname.includes('main.html') || document.querySelector('.header-text')) {
-        
+
         window.initHeaderAnimation = () => {
             const headerTitle = document.querySelector('.header-text h1');
             const headerDesc = document.querySelector('.header-text p');
@@ -437,14 +443,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     const animation = lottie.loadAnimation({ container: lottieContainer, renderer: 'svg', loop: false, autoplay: true, path: '/static/images/intro_animation.json' });
                     const finishLoading = () => {
                         const pl = document.getElementById("preloader");
-                        if(pl && typeof gsap !== 'undefined') { gsap.to(pl, { opacity: 0, duration: 0.5, onComplete: () => { pl.style.display="none"; window.playHeaderAnimation(); }}); } 
-                        else if (pl) { pl.style.display="none"; }
+                        if (pl && typeof gsap !== 'undefined') { gsap.to(pl, { opacity: 0, duration: 0.5, onComplete: () => { pl.style.display = "none"; window.playHeaderAnimation(); } }); }
+                        else if (pl) { pl.style.display = "none"; }
                     };
                     animation.addEventListener('complete', finishLoading);
                     animation.addEventListener('data_failed', finishLoading);
-                } catch(e) { console.log("Lottie Error"); }
-            } else { if(document.getElementById("preloader")) document.getElementById("preloader").style.display="none"; window.playHeaderAnimation(); }
-        } else { if(document.getElementById("preloader")) document.getElementById("preloader").style.display="none"; window.playHeaderAnimation(); }
+                } catch (e) { console.log("Lottie Error"); }
+            } else { if (document.getElementById("preloader")) document.getElementById("preloader").style.display = "none"; window.playHeaderAnimation(); }
+        } else { if (document.getElementById("preloader")) document.getElementById("preloader").style.display = "none"; window.playHeaderAnimation(); }
 
         // [애플 배너 복구]
         const icons = document.querySelectorAll('.cycling-icon');
@@ -454,9 +460,9 @@ document.addEventListener("DOMContentLoaded", () => {
             icons.forEach((icon, index) => {
                 const newText = icon.getAttribute('data-text');
                 iconTl.to(icon, { opacity: 1, scale: 1.2, duration: 0.5, ease: "back.out(1.7)" }, "start" + index)
-                      .to(keywordSpan, { opacity: 0, y: 10, duration: 0.2, onComplete: () => { keywordSpan.innerText = newText; } }, "start" + index)
-                      .to(keywordSpan, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, ">")
-                      .to(icon, { opacity: 0, scale: 0.8, duration: 0.3, delay: 1.5, ease: "power2.in" }, "end" + index);
+                    .to(keywordSpan, { opacity: 0, y: 10, duration: 0.2, onComplete: () => { keywordSpan.innerText = newText; } }, "start" + index)
+                    .to(keywordSpan, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }, ">")
+                    .to(icon, { opacity: 0, scale: 0.8, duration: 0.3, delay: 1.5, ease: "power2.in" }, "end" + index);
             });
         }
 
@@ -465,7 +471,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const handIcon = document.getElementById('hand-icon');
         if (guideEl && handIcon && typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
             gsap.to(handIcon, { x: -15, y: 10, rotation: -10, duration: 0.8, yoyo: true, repeat: -1, ease: "power1.inOut" });
-            ScrollTrigger.create({ trigger: ".tinder-section", start: "top 60%", once: true, onEnter: () => { if(guideEl.style.display !== 'none') gsap.to(guideEl, { autoAlpha: 1, duration: 0.5 }); } });
+            ScrollTrigger.create({ trigger: ".tinder-section", start: "top 60%", once: true, onEnter: () => { if (guideEl.style.display !== 'none') gsap.to(guideEl, { autoAlpha: 1, duration: 0.5 }); } });
             const hideGuide = () => { gsap.to(guideEl, { autoAlpha: 0, duration: 0.3, onComplete: () => { guideEl.style.display = 'none'; } }); };
             if (document.getElementById('tinder-list')) {
                 document.getElementById('tinder-list').addEventListener('mousedown', hideGuide, { once: true });
@@ -492,13 +498,13 @@ document.addEventListener("DOMContentLoaded", () => {
     // --------------------------------------------------------
     // [RENDERERS] Cards & MyPage
     // --------------------------------------------------------
-    
+
     // [수정 완료] 메인 슬라이드 2줄 렌더링
     const slideRow1 = document.getElementById('slide-row-1');
     const slideRow2 = document.getElementById('slide-row-2');
-    
+
     // 데이터 복제 (무한 스크롤용)
-    const infiniteData = [...allSlideData, ...allSlideData]; 
+    const infiniteData = [...allSlideData, ...allSlideData];
 
     if (slideRow1) {
         slideRow1.innerHTML = infiniteData.map(item => createCardHTML(item, false)).join('');
@@ -519,7 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
             mypageList.innerHTML = `<div class="empty-state"><i class="fa-regular fa-folder-open"></i><p>아직 찜한 정책이 없어요.</p></div>`;
         } else {
             mypageList.innerHTML = myLikedData.map(item => createCardHTML(item, false)).join('');
-            if(typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+            if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
                 gsap.from("#mypage-list .policy-card", { y: 50, opacity: 0, duration: 0.6, stagger: 0.1, scrollTrigger: { trigger: "#mypage-list", start: "top 80%" } });
             }
         }
@@ -532,9 +538,3 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     }
-
-    const pModal = document.getElementById('policy-modal');
-    const pClose = document.getElementById('modal-close-btn');
-    if(pClose) pClose.onclick = () => { pModal.classList.remove('active'); setTimeout(()=>pModal.classList.add('hidden'),300); };
-    if(pModal) pModal.onclick = (e) => { if(e.target === pModal) { pModal.classList.remove('active'); setTimeout(()=>pModal.classList.add('hidden'),300); } };
-});

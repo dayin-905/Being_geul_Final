@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>청년 정책 플랫폼 개발 가이드 (Detailed Ver.)</title>
+    <style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+
+        :root {
+            --primary: #4A9EA8;
+            --primary-dark: #357a82;
+            --accent: #F48245;
+            --bg: #fdfdfd;
+            --text: #333;
+            --gray: #666;
+            --code-bg: #1e1e1e;
+            --box-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* 타이틀 영역 */
+        header {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 30px;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--gray);
+            font-weight: 500;
+        }
+
+        /* 섹션 스타일 */
+        section {
+            margin-bottom: 80px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .num-badge {
+            background: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            color: #2c3e50;
+        }
+
+        /* 카드/박스 스타일 */
+        .card {
+            background: var(--box-bg);
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            color: var(--primary-dark);
+            font-size: 1.3rem;
+        }
+
+        /* 파일 구조 트리 */
+        .tree-view {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            border: 1px dashed #ccc;
+            white-space: pre;
+            overflow-x: auto;
+            line-height: 1.4;
+        }
+
+        /* 경고/팁 박스 */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 0.95rem;
+        }
+
+        .alert.warning {
+            background: #fff3e0;
+            border-left: 5px solid var(--accent);
+            color: #e65100;
+        }
+
+        .alert.info {
+            background: #e3f2fd;
+            border-left: 5px solid var(--primary);
+            color: #0d47a1;
+        }
+
+        /* 코드 블록 */
+        .code-block {
+            background: var(--code-bg);
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .code-title {
+            background: #333;
+            color: #fff;
+            padding: 5px 15px;
+            font-size: 0.8rem;
+            border-radius: 8px 8px 0 0;
+            display: inline-block;
+            margin-bottom: -5px;
+            /* 코드블록과 붙이기 위해 */
+        }
+
+        .comment {
+            color: #6a9955;
+        }
+
+        .cmd {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        /* 파일 역할 그리드 */
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .highlight {
+            background: #fff8c5;
+            padding: 2px 5px;
+            font-weight: bold;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>🚀 청년 정책 플랫폼 개발 가이드</h1>
+            <p class="subtitle">협업을 위한 프로젝트 리빌딩 구조 및 워크플로우 통합 문서</p>
+        </header>
+
+        <section>
+            <div class="section-header">
+                <div class="num-badge">1</div>
+                <h2>왜 리빌딩을 하나요? & 기본 구조</h2>
+            </div>
+
+            <div class="card" style="border-left: 5px solid var(--primary);">
+                <h3>💡 리빌딩의 핵심 이유</h3>
+                <p>기존에는 <code>main.py</code> 파일 하나에 모든 기능(로그인, 페이지 이동, 데이터 처리)을 다 넣는 '모놀리식(Monolithic)' 방식이었습니다.</p>
+                <ul style="margin-top: 15px; padding-left: 20px; color: #555;">
+                    <li><strong>문제점:</strong> 코드가 길어져서 서로가 수정한 부분이 엉키고(충돌), 에러가 나면 어디서 났는지 찾기 힘듭니다.</li>
+                    <li><strong>해결책:</strong> <span class="highlight">"기능별로 파일을 쪼개자(Router)"</span></li>
+                </ul>
+                <p style="margin-top: 10px;">👉 이제 여러분은 <strong>자신이 담당한 파일 하나만</strong> 신경 쓰면 됩니다. 전체 서버를 망가뜨릴 걱정이
+                    줄어듭니다!</p>
+            </div>
+
+            <h3>📂 리빌딩된 파일 구조 (File Tree)</h3>
+            <p>여러분이 작업할 환경의 지도입니다. <code>routers/</code> 폴더가 가장 중요합니다.</p>
+            <div class="tree-view">
+                📦 db_main_project
+                ┣ 📂 .venv (가상환경 - 건드리지 않음)
+                ┣ 📂 routers <span style="color:var(--accent);">★ [작업 공간] 각 페이지 담당자들이 작업할 곳</span>
+                ┃ ┣ 📜 __init__.py (필수 - 건드리지 않음)
+                ┃ ┣ 📜 auth.py (로그인/회원가입 기능)
+                ┃ ┣ 📜 landing.py (지도/인트로 페이지)
+                ┃ ┣ 📜 about.py (About 페이지 담당자 작업 파일)
+                ┃ ┗ 📜 main_page.py (Main 페이지 담당자 작업 파일)
+                ┣ 📂 static (CSS, JS, 이미지 파일)
+                ┣ 📂 templates (HTML 파일 모음)
+                ┣ 📜 .env (DB 비밀번호 등 보안 설정 - 공유 금지!)
+                ┣ 📜 database.py (DB 연결 설정)
+                ┣ 📜 models.py (DB 테이블 설계도)
+                ┣ 📜 setup_db.py (DB 테이블 생성 도구)
+                ┗ 📜 main.py <span style="color:var(--primary); font-weight:bold;">★ [관제탑] 모든 라우터를 합쳐서 서버를 실행</span>
+            </div>
+
+            <h3 style="margin-top: 30px;">📄 주요 파일 역할 설명</h3>
+            <div class="role-grid">
+                <div class="card">
+                    <h3>database.py & models.py</h3>
+                    <p><strong>[기반 시설]</strong> 데이터베이스(창고)를 짓기 위한 도면과 연결 통로입니다.
+                        <br><code>models.py</code>에 "User 테이블엔 아이디와 비번이 필요해"라고 적혀있습니다.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>setup_db.py</h3>
+                    <p><strong>[건설 인부]</strong> <code>models.py</code>의 도면을 보고 실제로 DB에 테이블을 만들어주는 '실행 파일'입니다.
+                        <br>초기에 딱 한 번만 실행하면 됩니다.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>routers/*.py</h3>
+                    <p><strong>[각 부서 사무실]</strong> 실제 업무를 처리하는 곳입니다.
+                        <br>예: <code>auth.py</code>는 로그인만 담당, <code>about.py</code>는 소개 페이지만 담당합니다.
+                    </p>
+                </div>
+                <div class="card">
+                    <h3>main.py</h3>
+                    <p><strong>[본사 관제탑]</strong> 흩어져 있는 부서(Router)들을 하나로 모아서(include) 서버를 켜는 시작점입니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-header">
+                <div class="num-badge">2</div>
+                <h2>개발 환경 초기 세팅 (Step-by-Step)</h2>
+            </div>
+
+            <div class="alert warning">
+                <strong>⚠️ 초심자 필독!</strong><br>
+                터미널(Terminal) 명령어는 오타 하나라도 있으면 실행되지 않습니다. 아래 명령어를 <strong>복사/붙여넣기</strong> 하는 것을 추천합니다.
+            </div>
+
+            <h3>STEP 1. 필수 라이브러리 설치</h3>
+            <p>서버 구동(FastAPI), DB 연결(SQLAlchemy) 등에 필요한 도구를 설치합니다.</p>
+            <div class="code-title">Terminal</div>
+            <div class="code-block">
+                <span class="comment"># requirements.txt 파일에 적힌 모든 라이브러리를 한 번에 설치합니다.</span>
+                <span class="cmd">pip install -r requirements.txt</span>
+            </div>
+
+            <h3 style="margin-top:20px;">STEP 2. 환경 변수 파일(.env) 생성</h3>
+            <p>DB 접속 정보는 보안상 코드에 직접 적지 않고 <code>.env</code> 파일에 따로 보관합니다.</p>
+            <div class="alert info">
+                <strong>할 일:</strong> 프로젝트 최상위 폴더에 <code>.env</code> 파일을 만들고, 공유받은 DB 접속 정보를 붙여넣으세요.<br>
+                (예: <code>DB_HOST=localhost</code>, <code>DB_PASSWORD=1234</code> 등)
+            </div>
+
+            <h3>STEP 3. 데이터베이스 테이블 생성</h3>
+            <p>설계도(models.py)대로 DB를 구축합니다.</p>
+            <div class="code-title">Terminal</div>
+            <div class="code-block">
+                <span class="comment"># 이 명령어를 치면 DB에 'users' 등의 테이블이 짠! 하고 생깁니다.</span>
+                <span class="cmd">python setup_db.py</span>
+            </div>
+
+            <h3>STEP 4. 서버 실행</h3>
+            <p>모든 준비가 끝났습니다. 서버를 켜봅시다.</p>
+            <div class="code-title">Terminal</div>
+            <div class="code-block">
+                <span class="comment"># --reload 옵션은 코드를 수정하면 자동으로 서버를 껐다 켜주는 기능입니다.</span>
+                <span class="cmd">uvicorn main:app --reload</span>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-header">
+                <div class="num-badge">3</div>
+                <h2>협업 및 파일 공유 프로세스</h2>
+            </div>
+
+            <p>리빌딩 후, 우리가 앞으로 어떻게 파일을 주고받아야 하는지 약속합니다.</p>
+
+            <div class="card" style="border: 2px solid var(--primary);">
+                <h3>🔄 내가 작업한 내용을 팀원에게 줄 때</h3>
+                <p>전체 폴더를 압축해서 주지 마세요! <strong>내가 수정한 파일만</strong> 공유하면 됩니다.</p>
+
+                <h4>1. 필수로 공유해야 할 파일 (Router)</h4>
+                <ul>
+                    <li><code>routers/내_담당_파일.py</code> (예: <code>routers/about.py</code>)</li>
+                    <li>이 파일이 있어야 다른 팀원 컴퓨터에서도 내 페이지가 돌아갑니다.</li>
+                </ul>
+
+                <h4 style="margin-top:15px;">2. 만약 HTML/JS도 수정했다면?</h4>
+                <ul>
+                    <li><code>templates/내_담당_페이지.html</code></li>
+                    <li><code>static/script.js</code> (만약 공통 스크립트를 건드렸다면 필수 공유!)</li>
+                </ul>
+
+                <h4 style="margin-top:15px;">3. main.py 수정 요청</h4>
+                <div class="alert info">
+                    <strong>중요:</strong> 새로운 라우터 파일을 만들었다면, 총괄(Maintainer)에게 <strong>"제 라우터도 <code>main.py</code>에 등록해
+                        주세요!"</strong> 라고 요청해야 합니다.<br>
+                    등록되지 않은 라우터는 서버에서 작동하지 않습니다.
+                </div>
+            </div>
+
+            <div class="card" style="background-color: #ffebee; border-color: #ef5350;">
+                <h3>🚫 절대 공유하면 안 되는 파일 (Ignore List)</h3>
+                <p>이 파일들은 각자의 컴퓨터 환경에 맞춰져 있거나 보안 정보가 들어있습니다.</p>
+                <ul>
+                    <li><strong>.env</strong> : DB 비밀번호가 들어있습니다. 해킹 당합니다!</li>
+                    <li><strong>.venv 폴더</strong> : 가상환경 폴더는 용량이 크고 컴퓨터마다 다릅니다.</li>
+                    <li><strong>__pycache__ 폴더</strong> : 파이썬이 만드는 임시 파일입니다.</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer>
+            <p>청년 정책 플랫폼 Project Guidelines • 2024 Team Collaboration</p>
+        </footer>
+    </div>
+
+</body>
+
+</html>

@@ -5,19 +5,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>전체 정책 보기 | 쓱쓱</title>
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css">
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css">
     <link rel="stylesheet" href="/static/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="/static/script.js" defer></script>
+    <script src="/static/script.js" defer></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script> 
-<script src="/static/script.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="/static/script.js" defer></script>
     <script src="/static/script.js" defer></script>
 
     <script>
@@ -39,18 +40,49 @@
         }
     </script>
     <style>
-        .perspective-wrap { perspective: 1000px; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .card-lifter { width: 100%; height: 100%; transform-style: preserve-3d; will-change: transform; }
-        .policy-card { transform-style: preserve-3d; backface-visibility: hidden; -webkit-font-smoothing: antialiased; transform: translateZ(0); width: 100%; height: 100%; }
-        .card-content { transform: translateZ(1px); background-color: #fff; }
-        .card-image { transform-style: preserve-3d; transform: translateZ(20px); }
+        .perspective-wrap {
+            perspective: 1000px;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .card-lifter {
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        .policy-card {
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
+            transform: translateZ(0);
+            width: 100%;
+            height: 100%;
+        }
+
+        .card-content {
+            transform: translateZ(1px);
+            background-color: #fff;
+        }
+
+        .card-image {
+            transform-style: preserve-3d;
+            transform: translateZ(20px);
+        }
     </style>
 </head>
 
 <body class="bg-gray-50 font-sans">
-    
+
     {% include "nav.html" %}
 
     <main class="max-w-[1200px] mx-auto px-5 py-10">
@@ -59,42 +91,62 @@
             <p class="text-gray-500 text-lg mb-5">마우스를 올려보세요! 화면 크기에 맞춰 카드가 반응합니다.</p>
 
             <div class="max-w-2xl mx-auto mb-6">
-                <div class="relative flex items-center w-full h-14 rounded-full focus-within:shadow-lg bg-white overflow-hidden border border-gray-200 shadow-sm transition-shadow duration-300">
+                <div
+                    class="relative flex items-center w-full h-14 rounded-full focus-within:shadow-lg bg-white overflow-hidden border border-gray-200 shadow-sm transition-shadow duration-300">
                     <div class="grid place-items-center h-full w-12 text-gray-400">
                         <i class="fa-solid fa-magnifying-glass text-lg"></i>
                     </div>
                     <input class="peer h-full w-full outline-none pr-12 text-base bg-transparent placeholder-gray-400"
                         style="color: #1f2937;" type="text" id="search-input"
                         placeholder="키워드를 입력해보세요 (예: 청년, 월세, 취업)" />
-                    <button id="clear-btn" class="hidden absolute right-4 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
+                    <button id="clear-btn"
+                        class="hidden absolute right-4 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors">
                         <i class="fa-solid fa-circle-xmark text-xl"></i>
                     </button>
                 </div>
             </div>
 
             <div class="relative w-full max-w-[800px] mx-auto group px-8 sm:px-0">
-                <button id="scroll-left" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/20 text-white backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 hover:bg-black/40 sm:hidden">
+                <button id="scroll-left"
+                    class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/20 text-white backdrop-blur-sm flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300 hover:bg-black/40 sm:hidden">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
 
-                <div id="category-filters" class="flex gap-2 overflow-x-auto pb-2 sm:justify-center justify-start hide-scrollbar scroll-smooth snap-x">
-                    <button class="filter-btn active snap-center shrink-0 px-5 py-2.5 rounded-full bg-[#777777] text-white text-sm font-bold transition-all shadow-md hover:bg-[#555555] hover:text-white flex items-center gap-2" data-category="all"><i class="fa-solid fa-layer-group"></i> 전체</button>
-                    <button class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-teal-50 hover:text-primary-teal hover:border-primary-teal transition-all flex items-center gap-2" data-category="취업"><i class="fa-solid fa-briefcase"></i> 취업</button>
-                    <button class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-orange-50 hover:text-primary-orange hover:border-primary-orange transition-all flex items-center gap-2" data-category="주거"><i class="fa-solid fa-house-chimney"></i> 주거</button>
-                    <button class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-yellow-50 hover:text-primary-beige hover:border-primary-beige transition-all flex items-center gap-2" data-category="금융"><i class="fa-solid fa-coins"></i> 금융</button>
-                    <button class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-red-50 hover:text-[#FF5A5F] hover:border-[#FF5A5F] transition-all flex items-center gap-2" data-category="창업"><i class="fa-solid fa-rocket"></i> 창업</button>
-                    <button class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-purple-50 hover:text-purple-500 hover:border-purple-500 transition-all flex items-center gap-2" data-category="복지"><i class="fa-solid fa-hand-holding-heart"></i> 복지</button>
-                    <button class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-blue-50 hover:text-blue-500 hover:border-blue-500 transition-all flex items-center gap-2" data-category="교육"><i class="fa-solid fa-graduation-cap"></i> 교육</button>
+                <div id="category-filters"
+                    class="flex gap-2 overflow-x-auto pb-2 sm:justify-center justify-start hide-scrollbar scroll-smooth snap-x">
+                    <button
+                        class="filter-btn active snap-center shrink-0 px-5 py-2.5 rounded-full bg-[#777777] text-white text-sm font-bold transition-all shadow-md hover:bg-[#555555] hover:text-white flex items-center gap-2"
+                        data-category="all"><i class="fa-solid fa-layer-group"></i> 전체</button>
+                    <button
+                        class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-teal-50 hover:text-primary-teal hover:border-primary-teal transition-all flex items-center gap-2"
+                        data-category="취업"><i class="fa-solid fa-briefcase"></i> 취업</button>
+                    <button
+                        class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-orange-50 hover:text-primary-orange hover:border-primary-orange transition-all flex items-center gap-2"
+                        data-category="주거"><i class="fa-solid fa-house-chimney"></i> 주거</button>
+                    <button
+                        class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-yellow-50 hover:text-primary-beige hover:border-primary-beige transition-all flex items-center gap-2"
+                        data-category="금융"><i class="fa-solid fa-coins"></i> 금융</button>
+                    <button
+                        class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-red-50 hover:text-[#FF5A5F] hover:border-[#FF5A5F] transition-all flex items-center gap-2"
+                        data-category="창업"><i class="fa-solid fa-rocket"></i> 창업</button>
+                    <button
+                        class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-purple-50 hover:text-purple-500 hover:border-purple-500 transition-all flex items-center gap-2"
+                        data-category="복지"><i class="fa-solid fa-hand-holding-heart"></i> 복지</button>
+                    <button
+                        class="filter-btn snap-center shrink-0 px-5 py-2.5 rounded-full bg-white border border-gray-200 text-gray-600 text-sm font-bold hover:bg-blue-50 hover:text-blue-500 hover:border-blue-500 transition-all flex items-center gap-2"
+                        data-category="교육"><i class="fa-solid fa-graduation-cap"></i> 교육</button>
                 </div>
 
-                <button id="scroll-right" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/20 text-white backdrop-blur-sm flex items-center justify-center sm:hidden hover:bg-black/40 transition-colors">
+                <button id="scroll-right"
+                    class="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-black/20 text-white backdrop-blur-sm flex items-center justify-center sm:hidden hover:bg-black/40 transition-colors">
                     <i class="fa-solid fa-chevron-right"></i>
                 </button>
             </div>
         </header>
 
-        <div id="card-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-10"></div>
-        
+        <div id="card-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 pb-10">
+        </div>
+
         <div id="loading-indicator" class="hidden w-full flex justify-center items-center py-10">
             <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-primary-teal"></div>
         </div>
@@ -110,8 +162,8 @@
 
     <script>
         // --- 1. 설정 및 유틸리티 ---
-        const ITEMS_PER_PAGE = 8; 
-        let currentPage = 1;      
+        const ITEMS_PER_PAGE = 8;
+        let currentPage = 1;
 
         const debounce = (func, delay) => {
             let timeoutId;
@@ -208,7 +260,7 @@
         // --- 4. 페이지네이션 렌더링 함수 ---
         function renderPagination(totalItems) {
             const paginationContainer = document.getElementById('pagination-container');
-            paginationContainer.innerHTML = ""; 
+            paginationContainer.innerHTML = "";
 
             const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
             if (totalPages <= 1) return;
@@ -225,11 +277,11 @@
                 }
 
                 btn.addEventListener('click', () => {
-                    currentPage = i; 
+                    currentPage = i;
                     const currentBtn = document.querySelector('.filter-btn.active');
                     const currentCategory = currentBtn ? currentBtn.dataset.category : 'all';
                     const keyword = document.getElementById('search-input').value;
-                    renderCards(currentCategory, keyword, true); 
+                    renderCards(currentCategory, keyword, true);
                 });
                 paginationContainer.appendChild(btn);
             }
@@ -254,7 +306,7 @@
 
             if (filteredData.length === 0) {
                 container.innerHTML = "";
-                document.getElementById('pagination-container').innerHTML = ""; 
+                document.getElementById('pagination-container').innerHTML = "";
                 if (noResult) noResult.classList.remove('hidden');
                 return;
             }
@@ -289,7 +341,7 @@
             }).join('');
 
             renderPagination(filteredData.length);
-            init3DEffect(); 
+            init3DEffect();
             if (isPageChange) window.scrollTo({ top: 0, behavior: 'smooth' });
             playEntranceAnimation();
         }
@@ -377,11 +429,14 @@
             // [핵심 수정 2] 기존 햄버거 메뉴 코드 삭제됨
             // 햄버거 메뉴 로직은 이제 /static/script.js 에서 처리합니다.
         });
-
-        function openCardModal(element) {
-            console.log("모달 열기:", element.dataset.json);
-        }
     </script>
+
+    <!-- policy-modal -->
+
+    {% include "components/policy_modal.html" %}
+
+    <script src="/static/policy_modal.js"></script>
+
 </body>
 
 </html>

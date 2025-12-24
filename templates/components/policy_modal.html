@@ -1,0 +1,61 @@
+<div id="policy-modal" class="modal-overlay hidden" style="z-index: 9999;">
+    <div
+        class="modal-content relative bg-white w-[90%] max-w-[450px] rounded-[30px] overflow-hidden border border-gray-200 transition-all">
+
+        <button id="modal-close-x-btn"
+            class="absolute top-4 right-4 z-50 w-10 h-10 flex items-center justify-center bg-white/80 backdrop-blur rounded-full text-gray-500 hover:text-gray-900 transition-all">
+            <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+
+        <div class="modal-image h-[280px] relative bg-gray-50">
+            <img id="modal-img" src="" alt="Policy Image" class="w-full h-full object-cover"
+                onerror="this.src='/static/images/card_images/job_1.webp'">
+
+            <span id="modal-category"
+                class="absolute top-5 left-5 bg-orange-100 text-primary-orange px-3 py-1 rounded-lg text-xs font-bold border border-orange-200">
+                카테고리
+            </span>
+        </div>
+
+        <div class="modal-body p-8 flex flex-col">
+
+            <h2 id="modal-title" class="text-2xl font-extrabold text-[#222] leading-tight mb-4">정책 제목</h2>
+
+            <div class="mb-6">
+                <p id="modal-desc" class="text-[#444] text-sm leading-relaxed whitespace-pre-line">
+                    정책 상세 내용이 이곳에 들어갑니다.
+                </p>
+            </div>
+
+            <div class="w-full border-b border-gray-100 mb-4"></div>
+
+            <div class="flex items-center justify-end mb-1">
+                <p id="modal-date" class="text-xs text-[#888] font-medium bg-gray-50 px-2 py-1 rounded">
+                    <i class="fa-regular fa-calendar mr-1"></i> 마감일
+                </p>
+            </div>
+
+            <div class="modal-actions grid grid-cols-[1fr_auto_auto] gap-3 mt-0">
+
+                <a id="modal-link-btn" href="#" target="_blank"
+                    class="flex items-center justify-center gap-2 bg-[#777777] text-white font-bold py-3.5 px-4 rounded-xl hover:bg-[#555555] transition-colors">
+                    <span>원문 보러 가기</span>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                </a>
+
+                <button id="modal-share-btn"
+                    class="w-14 h-full flex items-center justify-center border border-gray-200 rounded-xl text-gray-400 hover:border-[#777777] hover:text-[#777777] transition-colors"
+                    title="링크 복사">
+                    <i class="fa-solid fa-share-nodes text-lg"></i>
+                </button>
+
+                <button id="modal-heart-btn"
+                    class="w-14 h-full flex items-center justify-center border border-gray-200 rounded-xl text-gray-400 hover:border-red-500 hover:text-red-500 transition-colors"
+                    data-policy-id="">
+                    <i class="fa-regular fa-heart text-xl"></i>
+                </button>
+
+            </div>
+        </div>
+    </div>
+</div>

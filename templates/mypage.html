@@ -351,28 +351,7 @@
             </div>
             <div id="mypage-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"></div>
         </div>
-        </div>
     </main>
-
-    <div id="policy-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="modal-image">
-                <img id="modal-img" src="" alt="Policy Image">
-                <span id="modal-category" class="modal-tag">카테고리</span>
-            </div>
-            <div class="modal-body">
-                <h2 id="modal-title">정책 제목</h2>
-                <p id="modal-desc">정책 상세 내용</p>
-                <p id="modal-date" class="date">마감일</p>
-                <div class="modal-actions">
-                    <button id="modal-close-btn" class="action-btn back-btn"><i class="fa-solid fa-arrow-left"></i>
-                        되돌아가기</button>
-                    <button id="modal-heart-btn" class="action-btn heart-btn"><i
-                            class="fa-regular fa-heart"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div id="mbti-modal" class="fixed inset-0 z-[9999] flex items-center justify-center hidden">
         <div class="aurora-layer-dark">
@@ -606,6 +585,13 @@
             initLoadingLottie();
         });
     </script>
+
+    <!-- policy-modal -->
+
+    {% include "components/policy_modal.html" %}
+
+    <script src="/static/policy_modal.js"></script>
+
 </body>
 
 </html>
