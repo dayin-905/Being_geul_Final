@@ -193,115 +193,213 @@ window.openModal = function (itemDataEncoded) {
 };
 
 // ============================================================
-// [2] Controllers (Auth & Share)
+// [2] Controllers (Auth & Share) - ★ 진짜 서버 통신용 코드 ★
 // ============================================================
 
 const AuthController = {
-    targetRegionName: null,
-    targetCallback: null,
+    // [상태 관리]
+    currentRegion: null,
+    pendingCallback: null,
 
-    init: function () { this.bindGlobalEvents(); },
+    // 1. 초기화: 이벤트 위임 (버튼이 늦게 생겨도 무조건 클릭 감지)
+    init: function () {
+        document.addEventListener('click', (e) => {
+            // [수정] 클릭한 요소가 버튼 안의 아이콘(SVG)일 수도 있으니, 가장 가까운 ID 가진 요소를 찾습니다.
+            const target = e.target.closest('[id]');
+            if (!target) return; // ID 없는 빈 공간 클릭은 무시
 
-    open: function (mode = 'promo', regionName = null, count = 0, callback = null) {
-        const modal = document.getElementById('auth-modal');
-        if (!modal) return;
-        this.targetRegionName = regionName;
-        this.targetCallback = callback;
-        this.updateUI(mode, regionName, count);
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modal.classList.remove('opacity-0');
-            const content = document.getElementById('auth-modal-content');
-            if (content) { content.classList.remove('scale-95'); content.classList.add('scale-100'); }
-        }, 10);
-    },
+            // (1) 가입 완료 버튼
+            if (target.id === 'btn-signup-submit') {
+                e.preventDefault();
+                this.handleSignup();
+            }
 
-    close: function () {
-        const modal = document.getElementById('auth-modal');
-        if (!modal) return;
-        modal.classList.add('opacity-0');
-        const content = document.getElementById('auth-modal-content');
-        if (content) { content.classList.remove('scale-100'); content.classList.add('scale-95'); }
-        setTimeout(() => { modal.classList.add('hidden'); }, 300);
-    },
+            // (2) 로그인 완료 버튼
+            if (target.id === 'btn-login-submit') {
+                e.preventDefault();
+                this.handleLogin();
+            }
 
-    updateUI: function (mode, regionName, count) {
-        const views = { promo: document.getElementById('auth-view-promo'), signup: document.getElementById('auth-view-signup'), login: document.getElementById('auth-view-login') };
-        Object.values(views).forEach(el => { if (el) el.classList.add('hidden'); });
+            // (3) 모달 닫기 버튼들 (이제 아이콘 눌러도 닫힘!)
+            if (target.id === 'btn-modal-close-icon') {
+                this.closeModal();
+            }
+            if (target.id === 'btn-modal-browse') {
+                this.closeModal();
+                // 💡 [핵심] 모달 닫은 뒤, 원래 하려던 동작(페이지 이동) 계속 진행
+                if (this.pendingCallback) {
+                    this.pendingCallback();
+                }
+            }
 
-        if (mode === 'login' && views.login) views.login.classList.remove('hidden');
-        else if (mode === 'signup' && views.signup) views.signup.classList.remove('hidden');
-        else if (views.promo) views.promo.classList.remove('hidden');
+            // (4) 뷰 전환 버튼들
+            if (['btn-promo-login', 'btn-goto-login'].includes(target.id)) this.switchView('login');
+            if (['btn-promo-signup', 'btn-goto-signup'].includes(target.id)) this.switchView('signup');
 
-        if (regionName) {
-            const title = document.getElementById('auth-promo-title');
-            const desc = document.getElementById('auth-promo-desc');
-            const badge = document.getElementById('signup-region-badge');
-            const badgeContainer = document.getElementById('signup-region-badge-container');
-            if (title) title.innerHTML = `<span class="text-[#4A9EA8]">${regionName}</span> 소식을<br>받아보시겠습니까?`;
-            if (desc) desc.innerHTML = `총 ${count ? count.toLocaleString() : 0}건의 청년 정책을<br>놓치지 말고 확인하세요.`;
-            if (badge) badge.innerText = regionName;
-            if (badgeContainer) badgeContainer.style.display = 'inline-flex';
-        } else {
-            const badgeContainer = document.getElementById('signup-region-badge-container');
-            if (badgeContainer) badgeContainer.style.display = 'none';
-        }
-    },
-
-    bindGlobalEvents: function () {
-        // 1. 트리거 버튼 (js-login-trigger) 이벤트 위임
-        document.body.addEventListener('click', (e) => {
+            // (5) 로그인 트리거 (class로 찾기)
             const trigger = e.target.closest('.js-login-trigger');
             if (trigger) {
                 const mode = trigger.dataset.mode || 'login';
                 this.open(mode);
             }
         });
-
-        // 2. 모달 내부 버튼 이벤트
-        const closeBtn = document.getElementById('btn-modal-close-icon');
-        const browseBtn = document.getElementById('btn-modal-browse');
-
-        const promoSignup = document.getElementById('btn-promo-signup');
-        const promoLogin = document.getElementById('btn-promo-login');
-
-        const signupSubmit = document.getElementById('btn-signup-submit');
-        const loginSubmit = document.getElementById('btn-login-submit');
-
-        // [추가된 버튼들: 전환용]
-        const gotoSignup = document.getElementById('btn-goto-signup');
-        const gotoLogin = document.getElementById('btn-goto-login');
-
-        if (closeBtn) closeBtn.onclick = () => this.close();
-        if (browseBtn) browseBtn.onclick = () => {
-            this.close();
-            if (this.targetCallback) this.targetCallback();
-        };
-
-        if (promoSignup) promoSignup.onclick = () => this.updateUI('signup', this.targetRegionName);
-        if (promoLogin) promoLogin.onclick = () => this.updateUI('login');
-
-        // [새로 추가된 전환 이벤트]
-        if (gotoSignup) gotoSignup.onclick = () => this.updateUI('signup', this.targetRegionName);
-        if (gotoLogin) gotoLogin.onclick = () => this.updateUI('login');
-
-        if (signupSubmit) signupSubmit.onclick = () => this.handleAuthSuccess('가입');
-        if (loginSubmit) loginSubmit.onclick = () => this.handleAuthSuccess('로그인');
     },
 
-    handleAuthSuccess: function (type) {
-        alert(`${type} 되었습니다!`);
-        localStorage.setItem('isLoggedIn', 'true');
-        const emailInput = document.getElementById('login-id') || document.getElementById('signup-id');
-        const email = (emailInput && emailInput.value) ? emailInput.value : 'user@sseuk.com';
-        localStorage.setItem('virtualUser', email);
-        this.close();
-        checkLoginState();
-        if (this.targetCallback) { this.targetCallback(); } else { location.reload(); }
+    // 2. 모달 열기
+    open: function (mode = 'promo', regionName = null, count = 0, callback = null) {
+        const modal = document.getElementById('auth-modal');
+        const modalContent = document.getElementById('auth-modal-content');
+        if (!modal) return;
+
+        this.currentRegion = regionName;
+        this.pendingCallback = callback;
+
+        // UI 텍스트 업데이트
+        const elements = {
+            badgeContainer: document.getElementById('signup-region-badge-container'),
+            badgeText: document.getElementById('signup-region-badge'),
+            title: document.getElementById('auth-promo-title'),
+            desc: document.getElementById('auth-promo-desc')
+        };
+
+        if (regionName) {
+            if (elements.badgeText) elements.badgeText.innerText = regionName;
+            if (elements.badgeContainer) elements.badgeContainer.style.display = 'inline-flex';
+            if (elements.title) elements.title.innerHTML = `<span class="text-[#4A9EA8]">${regionName}</span> 소식을<br>받아보시겠습니까?`;
+            if (elements.desc) elements.desc.innerHTML = `총 ${count ? count.toLocaleString() : 0}건의 청년 정책을<br>놓치지 말고 확인하세요.`;
+        } else {
+            if (elements.badgeContainer) elements.badgeContainer.style.display = 'none';
+        }
+
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            if (modalContent) {
+                modalContent.classList.remove('scale-95');
+                modalContent.classList.add('scale-100');
+            }
+        }, 10);
+
+        this.switchView(mode);
+    },
+
+    // 3. 모달 닫기
+    closeModal: function () {
+        const modal = document.getElementById('auth-modal');
+        const modalContent = document.getElementById('auth-modal-content');
+        if (!modal) return;
+
+        modal.classList.add('opacity-0');
+        if (modalContent) {
+            modalContent.classList.remove('scale-100');
+            modalContent.classList.add('scale-95');
+        }
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.querySelectorAll('.auth-input').forEach(input => input.value = '');
+        }, 300);
+    },
+
+    // 4. 화면 전환
+    switchView: function (viewName) {
+        ['promo', 'signup', 'login'].forEach(v => {
+            const el = document.getElementById(`auth-view-${v}`);
+            if (el) {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            }
+        });
+        const target = document.getElementById(`auth-view-${viewName}`);
+        if (target) {
+            target.classList.remove('hidden');
+            target.classList.add('flex');
+        }
+    },
+
+    // 5. [API] 회원가입 처리 (★ 여기가 진짜 핵심입니다!)
+    handleSignup: async function () {
+        const email = document.getElementById('signup-id').value;
+        const password = document.getElementById('signup-pw').value;
+        const name = document.getElementById('signup-name').value;
+
+        if (!email || !password || !name) {
+            alert("모든 정보를 입력해주세요.");
+            return;
+        }
+
+        try {
+            // 진짜 서버로 데이터 전송!
+            const response = await fetch('/api/auth/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    name: name,
+                    region: this.currentRegion
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(`✅ 가입 성공: ${result.message}\n로그인 해주세요!`);
+                this.switchView('login');
+            } else {
+                alert(`❌ 가입 실패: ${result.detail}`);
+            }
+        } catch (error) {
+            console.error("통신 에러:", error);
+            alert("서버 연결 중 오류가 발생했습니다.");
+        }
+    },
+
+    // 6. [API] 로그인 처리 (★ 여기도 진짜!)
+    handleLogin: async function () {
+        const email = document.getElementById('login-id').value;
+        const password = document.getElementById('login-pw').value;
+
+        if (!email || !password) {
+            alert("아이디와 비밀번호를 입력해주세요.");
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: password })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userEmail', result.user.email);
+                localStorage.setItem('userName', result.user.name);
+
+                alert(`${result.user.name}님 환영합니다!`);
+                this.closeModal();
+                checkLoginState();
+
+                if (this.pendingCallback) {
+                    this.pendingCallback();
+                } else {
+                    location.reload();
+                }
+            } else {
+                alert(`로그인 실패: ${result.detail}`);
+            }
+        } catch (error) {
+            console.error(error);
+            alert("서버 연결 중 오류가 발생했습니다.");
+        }
     }
 };
 
+// ShareController는 님이 올리신 코드 그대로 쓰셔도 됩니다.
 const ShareController = {
+    // ... (기존 코드 유지)
     el: document.getElementById('share-modal'),
     input: document.getElementById('share-url-input'),
     btnClose: document.getElementById('btn-share-close'),
@@ -343,14 +441,54 @@ const ShareController = {
 
 window.openAuthModal = function (mode, regionName, count, callback) { AuthController.open(mode, regionName, count, callback); };
 
+// [NEW] Social Login Trigger (Global)
+window.socialLogin = function (provider) {
+    if (!['google', 'naver'].includes(provider)) return;
+    // 백엔드 EndPoint로 이동 -> 리다이렉트 -> 로그인 -> Callback -> 메인으로 복귀
+    window.location.href = `/api/auth/${provider}/login`;
+};
+
 // ============================================================
 // [3] 초기화 및 메인 로직
 // ============================================================
 
-function checkLoginState() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const userEmail = localStorage.getItem('virtualUser');
+async function checkLoginState() {
+    // [NEW] 0. OAuth 리다이렉트 복귀 처리 (URL 파라미터 확인)
+    const urlParams = new URLSearchParams(window.location.search);
+    const socialLogin = urlParams.get('social_login'); // success
 
+    if (socialLogin === 'success') {
+        const email = urlParams.get('email');
+        const name = urlParams.get('name');
+
+        if (email && name) {
+            // 로컬 스토리지 저장 (로그인 처리)
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userEmail', email);
+            localStorage.setItem('userName', name);
+
+            // 깔끔한 URL을 위해 파라미터 제거 (선택 사항)
+            window.history.replaceState({}, document.title, window.location.pathname);
+
+            alert(`${name}님, 소셜 로그인 성공! 환영합니다.`);
+
+            // [NEW] 메인 페이지로 이동
+            window.location.href = '/main.html';
+        }
+    }
+
+    // 1. 서버에 "나 로그인 맞아?" 물어보기
+    try {
+        const res = await fetch('/api/auth/verify');
+        if (!res.ok) {
+            // 서버가 "너 아닌데?"(401)라고 하면 청소!
+            localStorage.clear();
+            return; // 함수 종료
+        }
+    } catch (e) {
+        localStorage.clear();
+        return;
+    }
     if (isLoggedIn && userEmail) {
         const pcNavList = document.getElementById('pc-nav-list');
         if (pcNavList) {
@@ -538,4 +676,4 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
     }
-});
+
