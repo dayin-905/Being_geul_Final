@@ -283,10 +283,53 @@
         </div>
     </div>
 
+    <script>
+        // [서버 데이터 연동 -- 전역 변수 설정] 
+        // script.js가 로드되기 전에 데이터를 주입해야 합니다.
+        window.tinderData = [
+            {% for policy in policies %}
+        {
+            id: "{{ policy.id }}",
+                title: "{{ policy.title }}",
+                    desc: `{{ policy.summary | default('', true) | replace('`', '') | truncate(100) }}`, 
+            category: "{{ policy.genre }}",
+                date: "{{ policy.period | default('상시 모집', true) }}",
+                    image: "{{ get_policy_image(policy.genre) }}",
+                        link: "{{ policy.link }}",
+                            region: "{{ policy.region }}",
+                                colorCode: "{{ categoryColorMap.get(policy.genre[:2], '#777777') }}"
+        },
+        {% endfor %}
+        ];
+
+        window.allSlideData = [
+            {% for policy in slider_policies %}
+        {
+            id: "{{ policy.id }}",
+                title: "{{ policy.title }}",
+                    desc: `{{ policy.summary | default('', true) | replace('`', '') | truncate(80) }}`, 
+            category: "{{ policy.genre }}",
+                date: "{{ policy.period | default('상시 모집', true) }}",
+                    image: "{{ get_policy_image(policy.genre) }}",
+                        link: "{{ policy.link }}",
+                            region: "{{ policy.region }}",
+                                colorCode: "{{ categoryColorMap.get(policy.genre[:2], '#777777') }}"
+        },
+        {% endfor %}
+        ];
+    </script>
     <script src="/static/script.js"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            // [서버 데이터 연동] DB에서 가져온 정책 리스트를 JS 객체로 변환
+            // [서버 데이터 연동] 
+            // 데이터는 위쪽 스크립트(window.tinderData)에서 이미 전역으로 설정되었습니다.
+            // script.js가 이를 참조하여 초기화합니다.
+            // 만약 서버 데이터가 없을 경우를 대비한 더미 데이터 (선택 사항 - 현재는 비워둠)
+            if (window.tinderData.length === 0) {
+                console.warn("No policy data loaded from server.");
+            }
             // 변수 설정
             const urlParams = new URLSearchParams(window.location.search);
             let regionId = urlParams.get('region');

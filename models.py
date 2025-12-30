@@ -29,6 +29,7 @@ class User(Base):
     name = Column(String, nullable=False)
     password = Column(String, nullable=True)
     region = Column(String, nullable=True)
+    provider = Column(String, default="local") # [NEW] 로그인 제공자 (local, google, naver)
 
 
 # 3. 사용자 행동(좋아요/패스) 테이블 (신규)

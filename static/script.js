@@ -42,9 +42,9 @@ function generatePolicyData(count) {
     return data;
 }
 
-// 데이터 초기화
-const tinderData = generatePolicyData(10);
-const allSlideData = generatePolicyData(30);
+// 데이터 초기화 (서버에서 주입된 window 데이터 우선 사용)
+const tinderData = window.tinderData || generatePolicyData(10);
+const allSlideData = window.allSlideData || generatePolicyData(30);
 const myLikedData = generatePolicyData(5);
 
 // 카드 HTML 생성 함수 (수정됨)
@@ -128,10 +128,27 @@ class CardSwiper {
         this.cards = document.querySelectorAll('.tinder-card');
         this.setupEvents();
         if (typeof gsap !== 'undefined') {
-            gsap.from(".tinder-card", { y: 100, opacity: 0, duration: 0.8, stagger: 0.1, ease: "back.out(1.7)" });
+            // [최적화] 모든 카드를 애니메이션하면 렉이 걸리므로, 상위 5개만 움직이게 설정
+            gsap.from(".tinder-card:nth-last-child(-n+5)", { y: 100, opacity: 0, duration: 0.8, stagger: 0.1, ease: "back.out(1.7)" });
         }
     }
-    setupEvents() { this.cards.forEach((card) => { this.addListeners(card); }); }
+    setupEvents() {
+        this.cards.forEach((card) => { this.addListeners(card); });
+
+        // [NEW] 키보드 이벤트 리스너 추가 (왼쪽/오른쪽 화살표)
+        document.addEventListener('keydown', (e) => {
+            // 현재 남아있는 카드 중 가장 위에 있는(DOM상 마지막) 카드 선택
+            const currentCards = document.querySelectorAll('.tinder-card');
+            if (currentCards.length === 0) return;
+            const topCard = currentCards[currentCards.length - 1]; // 맨 위 카드
+
+            if (e.key === 'ArrowLeft') {
+                this.swipeCard(topCard, 'left');
+            } else if (e.key === 'ArrowRight') {
+                this.swipeCard(topCard, 'right');
+            }
+        });
+    }
     addListeners(card) {
         let isDragging = false, startX = 0, currentX = 0;
         const likeBadge = card.querySelector('.swipe-feedback.like');
