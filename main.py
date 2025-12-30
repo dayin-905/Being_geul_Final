@@ -9,7 +9,7 @@ from database import engine
 
 # [중요 2] 우리가 만든 라우터들 가져오기
 # (팀원들이 routers 폴더에 해당 파일들을 만들어야 에러가 안 납니다!)
-from routers import landing, auth, about, main_page 
+from routers import landing, auth, about, main_page, all 
 
 # [중요 3] 서버 시작 시 DB에 없는 테이블(users 등) 자동 생성
 models.Base.metadata.create_all(bind=engine)
@@ -30,6 +30,7 @@ app.include_router(landing.router)    # 지도 데이터 및 랜딩 기능
 app.include_router(auth.router)       # 로그인/회원가입 기능
 app.include_router(about.router)      # [NEW] About 페이지 담당자 기능
 app.include_router(main_page.router)  # [NEW] Main 페이지 담당자 기능
+app.include_router(all.router)        # [NEW] 전체 정책 페이지 기능
 
 # --- 페이지 접속 경로 설정 ---
 

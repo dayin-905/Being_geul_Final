@@ -73,6 +73,14 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         }
     }
 
+
+# 5. [로그인 검증 API] (프론트엔드 오류 방지용)
+@router.get("/verify")
+def verify_session():
+    # 현재 세션/토큰 구현이 없으므로, 프론트엔드에서 localStorage로 관리되는 상태를 유지하기 위해
+    # 무조건 200 OK를 반환합니다. 추후 JWT 또는 세션 검증 로직으로 대체해야 합니다.
+    return {"message": "Session is valid"}
+
 # ============================================================
 # [OAuth 설정] 환경 변수 로드 및 설정
 # ============================================================
