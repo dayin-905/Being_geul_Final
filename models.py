@@ -1,6 +1,7 @@
 # [수정] String, ForeignKey 추가, relationship 추가
 from sqlalchemy import Column, Integer, Text, String, DateTime, Date, ForeignKey
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from database import Base
 
 # 1. 정책 테이블 (기존)
