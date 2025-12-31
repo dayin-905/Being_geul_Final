@@ -1,5 +1,7 @@
-# [수정] String 추가!
-from sqlalchemy import Column, Integer, Text, String, DateTime, Date
+# [수정] String, ForeignKey 추가, relationship 추가
+from sqlalchemy import Column, Integer, Text, String, DateTime, Date, ForeignKey
+from sqlalchemy.orm import relationship
+from datetime import datetime
 from database import Base
 
 # 1. 정책 테이블 (기존)
@@ -31,6 +33,10 @@ class User(Base):
     region = Column(String, nullable=True)
     provider = Column(String, default="local") # [NEW] 로그인 제공자 (local, google, naver)
 
+    # [NEW] 유료 멤버십 등급 (free / premium)
+    subscription_level = Column(String, default="free")
+    # [NEW] 관계 설정 (유저가 지워지면 행동 로그도 지워짐)
+    actions = relationship("UserAction", back_populates="user", cascade="all, delete")
 
 # 3. 사용자 행동(좋아요/패스) 테이블 (신규)
 from datetime import datetime
@@ -39,10 +45,21 @@ class UserAction(Base):
     __tablename__ = "users_action"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_email = Column(String, nullable=False, index=True) 
-    policy_id = Column(Integer, nullable=False) # Policy 테이블 조인용
-    type = Column(String, nullable=False) # 'like' 또는 'pass' 저장
+    
+    # 1. user_id 대신 user_email 사용
+    user_email = Column(String, ForeignKey("users.email"))
+    
+    # 2. policy_id (동일)
+    policy_id = Column(Integer, ForeignKey("being_test.id"))
+    
+    # 3. action_type -> type
+    type = Column(String, nullable=False)
+    
+    # 4. timestamp -> created_at
     created_at = Column(DateTime, default=datetime.now)
+
+    # Relationship (Join condition 명시)
+    user = relationship("User", back_populates="actions", foreign_keys=[user_email])
 
 # -------------------------------------------------------------------
 # [추가] 서버 실행을 위한 상수 및 헬퍼 함수 (재복구)

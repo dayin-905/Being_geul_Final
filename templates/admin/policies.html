@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Policy Content - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .admin-bar {
+            background: linear-gradient(90deg, #FF5A5F 0%, #B91C1C 100%);
+            color: white;
+            font-weight: 800;
+        }
+
+        .sidebar {
+            background-color: #1f2937;
+            color: #d1d5db;
+        }
+
+        .sidebar-link:hover {
+            background-color: #374151;
+            color: white;
+            padding-left: 1.5rem;
+        }
+
+        .sidebar-link.active {
+            background-color: #4A9EA8;
+            color: white;
+            border-left: 4px solid #F48245;
+        }
+
+        /* Popover Menu for Filtering */
+        .popover-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            min-width: 220px;
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            z-index: 50;
+        }
+
+        .popover-menu.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col h-screen">
+
+    <div class="admin-bar w-full py-2 text-center shadow-md z-50">
+        ⚠️ ADMIN MODE ACTIVE ⚠️
+    </div>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="sidebar w-64 flex-shrink-0 flex flex-col shadow-xl">
+            <div class="p-6 text-center border-b border-gray-700">
+                <h2 class="text-xl font-bold text-white tracking-widest">SSEUK-ADMIN</h2>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <ul class="space-y-1">
+                    <li><a href="/admin/dashboard" class="sidebar-link flex items-center px-6 py-3 transition-all">📊
+                            Dashboard</a></li>
+                    <li><a href="/admin/users" class="sidebar-link flex items-center px-6 py-3 transition-all">👥 Users
+                            Management</a></li>
+                    <li><a href="/admin/policies"
+                            class="sidebar-link active flex items-center px-6 py-3 transition-all">📑 Policy Content</a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="p-4 border-t border-gray-700">
+                <a href="/admin/logout"
+                    class="block w-full py-2 px-4 bg-gray-700 hover:bg-red-600 text-center rounded text-sm text-white">Log
+                    Out</a>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                    <h1 class="text-3xl font-bold text-gray-800">Policy Content</h1>
+
+                    <!-- Search Form -->
+                    <form class="flex w-full sm:w-auto" method="get" onsubmit="event.preventDefault(); applyFilters();">
+                        <div class="relative w-full sm:w-80">
+                            <input type="text" id="searchInput" name="q" value="{{ q }}"
+                                placeholder="Search Title or Region..."
+                                class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9EA8] focus:border-transparent">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="flex justify-between items-end mb-2">
+                    <span class="text-sm text-gray-600">
+                        Total <strong>{{ total_count }}</strong> policies found
+                    </span>
+                    <span class="text-sm text-gray-500">Page {{ current_page }} of {{ total_pages }}</span>
+                </div>
+
+                <div class="bg-white shadow-md rounded-lg overflow-hidden flex flex-col h-[calc(100vh-220px)]">
+                    <div class="overflow-auto flex-1">
+                        <table class="min-w-full divide-y divide-gray-200 relative">
+                            <thead class="bg-gray-100 sticky top-0 z-10">
+                                <tr>
+                                    <!-- Simple Sort Link Helper -->
+                                    {% macro sort_link(col_code, label) %}
+                                    <a href="javascript:void(0)" onclick="applySort('{{ col_code }}')"
+                                        class="group inline-flex items-center space-x-1 hover:text-[#4A9EA8] transition">
+                                        <span>{{ label }}</span>
+                                        <span class="text-xs text-gray-400 group-hover:text-[#4A9EA8]">
+                                            {% if sort == col_code %}
+                                            {{ '▲' if order == 'asc' else '▼' }}
+                                            {% else %}
+                                            ⇅
+                                            {% endif %}
+                                        </span>
+                                    </a>
+                                    {% endmacro %}
+
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                                        {{ sort_link('id', 'ID') }}
+                                    </th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                                        {{ sort_link('title', 'Title') }}
+                                    </th>
+
+                                    <!-- Genre Filter Header -->
+                                    <th class="relative px-6 py-3 text-left">
+                                        <div class="flex items-center gap-1 cursor-pointer hover:text-[#4A9EA8]"
+                                            onclick="toggleFilterMenu('genre-popover', event)">
+                                            <span
+                                                class="text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-[#4A9EA8]">Genre</span>
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z">
+                                                </path>
+                                            </svg>
+                                        </div>
+                                        <!-- Filtering Popover -->
+                                        <div id="genre-popover" class="popover-menu" onclick="event.stopPropagation()">
+                                            <div class="text-xs font-bold text-gray-700 mb-2 pb-1 border-b">Filter
+                                                Genres</div>
+                                            <div class="space-y-2 mb-3 max-h-48 overflow-y-auto">
+                                                {% for g in all_genres %}
+                                                <label
+                                                    class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+                                                    <input type="checkbox" value="{{ g }}"
+                                                        class="genre-checkbox form-checkbox rounded text-[#4A9EA8] focus:ring-[#4A9EA8]"
+                                                        {{ 'checked' if g in selected_genres else '' }}>
+                                                    <span>{{ g }}</span>
+                                                </label>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="flex justify-between pt-2 border-t border-gray-100">
+                                                <button onclick="clearCheckbox('genre-checkbox')"
+                                                    class="text-xs text-gray-400 hover:text-gray-600">Reset</button>
+                                                <button onclick="applyFilters()"
+                                                    class="px-3 py-1 bg-[#4A9EA8] hover:bg-teal-600 text-white text-xs rounded shadow-sm">Apply</button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <!-- Region Filter Header -->
+                                    <th class="relative px-6 py-3 text-left">
+                                        <div class="flex items-center gap-1 cursor-pointer hover:text-[#4A9EA8]"
+                                            onclick="toggleFilterMenu('region-popover', event)">
+                                            <span
+                                                class="text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-[#4A9EA8]">Region</span>
+                                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z">
+                                                </path>
+                                            </svg>
+                                        </div>
+                                        <!-- Filtering Popover -->
+                                        <div id="region-popover" class="popover-menu" onclick="event.stopPropagation()">
+                                            <div class="text-xs font-bold text-gray-700 mb-2 pb-1 border-b">Filter
+                                                Regions</div>
+                                            <div class="space-y-2 mb-3 max-h-48 overflow-y-auto">
+                                                {% for r in all_regions %}
+                                                <label
+                                                    class="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+                                                    <input type="checkbox" value="{{ r }}"
+                                                        class="region-checkbox form-checkbox rounded text-[#4A9EA8] focus:ring-[#4A9EA8]"
+                                                        {{ 'checked' if r in selected_regions else '' }}>
+                                                    <span>{{ r }}</span>
+                                                </label>
+                                                {% endfor %}
+                                            </div>
+                                            <div class="flex justify-between pt-2 border-t border-gray-100">
+                                                <button onclick="clearCheckbox('region-checkbox')"
+                                                    class="text-xs text-gray-400 hover:text-gray-600">Reset</button>
+                                                <button onclick="applyFilters()"
+                                                    class="px-3 py-1 bg-[#4A9EA8] hover:bg-teal-600 text-white text-xs rounded shadow-sm">Apply</button>
+                                            </div>
+                                        </div>
+                                    </th>
+
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {{ sort_link('period', 'Period') }}
+                                    </th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Link</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for policy in policies %}
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ policy.id }}</td>
+
+                                    <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                                        <div class="truncate max-w-[200px]" title="{{ policy.title }}">
+                                            {{ policy.title }}
+                                        </div>
+                                    </td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                        <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                                            {{ policy.genre or 'N/A' }}
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span
+                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            {{ policy.region or 'All' }}
+                                        </span>
+                                    </td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <div class="truncate max-w-[150px]" title="{{ policy.period }}">
+                                            {{ policy.period or '-' }}
+                                        </div>
+                                    </td>
+
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-[#4A9EA8]">
+                                        <a href="{{ policy.link }}" target="_blank" class="hover:underline">View
+                                            Link</a>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="px-6 py-10 text-center text-gray-400">
+                                        No policies found matching filters.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination Controls -->
+                    {% if total_pages > 1 %}
+                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-center">
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                                aria-label="Pagination">
+                                <!-- Previous Page -->
+                                {% if current_page > 1 %}
+                                <a href="javascript:void(0)" onclick="goToPage({{ current_page - 1 }})"
+                                    class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                    <span class="sr-only">Previous</span>
+                                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                                {% endif %}
+
+                                <!-- Page Numbers -->
+                                {% for p in range(current_page - 2, current_page + 3) %}
+                                {% if p > 0 and p <= total_pages %} <a href="javascript:void(0)"
+                                    onclick="goToPage({{ p }})"
+                                    class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium {% if p == current_page %}text-[#4A9EA8] bg-teal-50 border-[#4A9EA8] z-10{% else %}text-gray-700 hover:bg-gray-50{% endif %}">
+                                    {{ p }}
+                                    </a>
+                                    {% endif %}
+                                    {% endfor %}
+
+                                    <!-- Next Page -->
+                                    {% if current_page < total_pages %} <a href="javascript:void(0)"
+                                        onclick="goToPage({{ current_page + 1 }})"
+                                        class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        <span class="sr-only">Next</span>
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                            fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                        </a>
+                                        {% endif %}
+                            </nav>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript Handling -->
+    <script>
+        // 1. Current State from Server
+        const currentSort = "{{ sort }}";
+        const currentOrder = "{{ order }}";
+
+        // 2. Popover Logic
+        function toggleFilterMenu(id, event) {
+            // Close all others
+            document.querySelectorAll('.popover-menu').forEach(el => {
+                if (el.id !== id) el.classList.remove('show');
+            });
+            // Toggle current
+            const popover = document.getElementById(id);
+            popover.classList.toggle('show');
+
+            event.stopPropagation();
+        }
+
+        // Close when clicking outside
+        window.onclick = function (event) {
+            if (!event.target.closest('.popover-menu') && !event.target.closest('th')) {
+                document.querySelectorAll('.popover-menu').forEach(el => el.classList.remove('show'));
+            }
+        }
+
+        // Reset checkboxes
+        function clearCheckbox(className) {
+            document.querySelectorAll('.' + className).forEach(cb => cb.checked = false);
+        }
+
+        // 3. Main Filter & Sort & Page Applier
+        function applyFilters() {
+            // Get Search
+            const q = document.getElementById('searchInput').value;
+
+            // Get Checkboxes
+            const genres = Array.from(document.querySelectorAll('.genre-checkbox:checked')).map(cb => cb.value).join(',');
+            const regions = Array.from(document.querySelectorAll('.region-checkbox:checked')).map(cb => cb.value).join(',');
+
+            // Construct Query
+            const urlParams = new URLSearchParams();
+            if (q) urlParams.set('q', q);
+            if (genres) urlParams.set('genres', genres);
+            if (regions) urlParams.set('regions', regions);
+
+            // Maintain Sort
+            if (currentSort) urlParams.set('sort', currentSort);
+            if (currentOrder) urlParams.set('order', currentOrder);
+
+            // Reset to Page 1 on filter change
+            urlParams.set('page', 1);
+
+            window.location.search = urlParams.toString();
+        }
+
+        // 4. Sort Applier
+        function applySort(col) {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            let newOrder = 'desc';
+            if (currentSort === col && currentOrder === 'desc') {
+                newOrder = 'asc';
+            }
+
+            urlParams.set('sort', col);
+            urlParams.set('order', newOrder);
+
+            // Keep current filters but reset page? Maybe keep page (or reset). Usually reset.
+            urlParams.set('page', 1);
+
+            window.location.search = urlParams.toString();
+        }
+
+        // 5. Pagination Applier
+        function goToPage(p) {
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('page', p);
+            window.location.search = urlParams.toString();
+        }
+    </script>
+</body>
+
+</html>

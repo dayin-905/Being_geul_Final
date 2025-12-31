@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Users Management - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard+Variable:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard Variable', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .admin-bar {
+            background: linear-gradient(90deg, #FF5A5F 0%, #B91C1C 100%);
+            color: white;
+            font-weight: 800;
+        }
+
+        .sidebar {
+            background-color: #1f2937;
+            color: #d1d5db;
+        }
+
+        .sidebar-link:hover {
+            background-color: #374151;
+            color: white;
+            padding-left: 1.5rem;
+        }
+
+        .sidebar-link.active {
+            background-color: #4A9EA8;
+            color: white;
+            border-left: 4px solid #F48245;
+        }
+
+        .btn-brand {
+            background-color: #4A9EA8;
+            color: white;
+        }
+
+        .btn-brand:hover {
+            background-color: #3b858e;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col h-screen">
+
+    <div class="admin-bar w-full py-2 text-center shadow-md z-50">
+        ⚠️ ADMIN MODE ACTIVE ⚠️
+    </div>
+
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="sidebar w-64 flex-shrink-0 flex flex-col shadow-xl">
+            <div class="p-6 text-center border-b border-gray-700">
+                <h2 class="text-xl font-bold text-white tracking-widest">SSEUK-ADMIN</h2>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <ul class="space-y-1">
+                    <li><a href="/admin/dashboard" class="sidebar-link flex items-center px-6 py-3 transition-all">📊
+                            Dashboard</a></li>
+                    <li><a href="/admin/users" class="sidebar-link active flex items-center px-6 py-3 transition-all">👥
+                            Users Management</a></li>
+                    <li><a href="/admin/policies" class="sidebar-link flex items-center px-6 py-3 transition-all">📑
+                            Policy Content</a></li>
+                </ul>
+            </nav>
+            <div class="p-4 border-t border-gray-700">
+                <a href="/admin/logout"
+                    class="block w-full py-2 px-4 bg-gray-700 hover:bg-red-600 text-center rounded text-sm text-white">Log
+                    Out</a>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8">
+            <div class="max-w-7xl mx-auto">
+                <h1 class="text-3xl font-bold text-gray-800 mb-8">Users Management</h1>
+
+                <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    ID</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Name</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Email</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Region</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Sub. Level</th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for user in users %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ user.name
+                                    }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.email }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.region or '-' }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span
+                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if user.subscription_level == 'premium' %}bg-purple-100 text-purple-800{% else %}bg-green-100 text-green-800{% endif %}">
+                                        {{ user.subscription_level }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button
+                                        onclick="openModal('{{ user.id }}', '{{ user.name }}', '{{ user.email }}', '{{ user.region }}', '{{ user.subscription_level }}')"
+                                        class="text-[#4A9EA8] hover:text-[#3b858e] font-medium focus:outline-none">
+                                        Edit
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Edit User</h3>
+                <form action="/admin/users/update" method="POST" class="mt-2 text-left">
+                    <input type="hidden" id="edit_user_id" name="user_id">
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Name</label>
+                        <input type="text" id="edit_name" name="name" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                        <input type="email" id="edit_email" name="email" required
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Region
+                            <span class="text-xs font-normal text-gray-500 ml-1">(Please select a valid region)</span>
+                        </label>
+                        <select id="edit_region" name="region"
+                            class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            <option value="">None</option>
+                            {% for r in regions %}
+                            <option value="{{ r }}">{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Subscription Level</label>
+                        <select id="edit_subscription_level" name="subscription_level"
+                            class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            <option value="free">Free</option>
+                            <option value="premium">Premium</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <button type="button" onclick="closeModal()"
+                            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="bg-[#4A9EA8] hover:bg-[#3b858e] text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+                            Update
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id, name, email, region, subLevel) {
+            document.getElementById('edit_user_id').value = id;
+            document.getElementById('edit_name').value = name;
+            document.getElementById('edit_email').value = email;
+            document.getElementById('edit_region').value = region && region !== 'None' ? region : '';
+            document.getElementById('edit_subscription_level').value = subLevel;
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        // Close modal if clicked outside
+        window.onclick = function (event) {
+            var modal = document.getElementById('editModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -9,7 +9,7 @@ from database import engine
 
 # [중요 2] 우리가 만든 라우터들 가져오기
 # (팀원들이 routers 폴더에 해당 파일들을 만들어야 에러가 안 납니다!)
-from routers import landing, auth, about, main_page, all, mypage 
+from routers import landing, auth, about, main_page, all, mypage, admin 
 
 # [중요 3] 서버 시작 시 DB에 없는 테이블(users 등) 자동 생성
 models.Base.metadata.create_all(bind=engine)
@@ -32,6 +32,7 @@ app.include_router(about.router)      # [NEW] About 페이지 담당자 기능
 app.include_router(main_page.router)  # [NEW] Main 페이지 담당자 기능
 app.include_router(all.router)        # [NEW] 전체 정책 페이지 기능
 app.include_router(mypage.router)     # [NEW] 마이페이지 기능 (찜하기, 통계)
+app.include_router(admin.router)      # [NEW] 관리자 페이지 기능 (admin.html)
 
 # --- 페이지 접속 경로 설정 ---
 
@@ -56,3 +57,10 @@ async def read_all_policies(request: Request):
 # 이제 그 파일들(routers/main_page.py, routers/about.py) 안에서 페이지를 띄워줍니다.
 # 중복을 막기 위해 여기서는 지웠습니다. (만약 라우터 파일이 없다면 에러가 납니다!)
 # ------------------------------------------------------------------
+
+# [5] 직접 실행(Debug)을 위한 코드 추가
+# 이 코드가 있어야 'python main.py'로 실행했을 때 서버가 켜집니다.
+if __name__ == "__main__":
+    import uvicorn
+    # reload=True는 코드 수정 시 자동 재시작 기능 (개발용)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
