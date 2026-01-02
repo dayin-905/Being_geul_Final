@@ -8,52 +8,59 @@ if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
 }
 
 // ============================================================
-// [1] 데이터 & 유틸리티 (전역 함수로 분리 - 페이지별 이동 용이)
+// [1] 데이터 & 유틸리티
 // ============================================================
 
-const categories = ["취업/직무", "창업/사업", "주거/자립", "금융/생활비", "교육/자격증", "복지/문화"];
+// [수정 1] 가짜 데이터 생성 함수(generatePolicyData) 삭제함.
+// HTML에서 window 객체에 넣어준 DB 데이터만 사용. 없으면 빈 배열([]).
+const tinderData = window.tinderData || [];
+const allSlideData = window.allSlideData || [];
 
-// 데이터 생성 함수
-function generatePolicyData(count) {
-    const categoryMap = { "취업/직무": "job", "창업/사업": "startup", "주거/자립": "housing", "금융/생활비": "finance", "교육/자격증": "growth", "복지/문화": "welfare" };
-    const categoryCounters = {};
-
-    const data = [];
-    for (let i = 1; i <= count; i++) {
-        const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-
-        if (categoryCounters[randomCategory] === undefined) categoryCounters[randomCategory] = 0;
-        const imgNum = categoryCounters[randomCategory];
-        const imgIndex = (imgNum % 5) + 1;
-        categoryCounters[randomCategory]++;
-
-        const prefix = categoryMap[randomCategory] || "welfare";
-        const localImage = `/static/images/card_images/${prefix}_${imgIndex}.webp`;
-
-        data.push({
-            id: i,
-            category: randomCategory,
-            title: `[${randomCategory}] 청년 정책 제목 ${i}`,
-            desc: "이 정책은 서울시 청년들을 위한 맞춤형 지원 사업입니다. 혜택을 놓치지 마세요.",
-            date: `2025.12.${String(Math.floor(Math.random() * 30) + 1).padStart(2, '0')} 마감`,
-            image: localImage
-        });
-    }
-    return data;
+// [신규] DB 장르(genre)에 따라 이미지를 자동으로 매칭해주는 함수
+function getCategoryImage(genre) {
+    const map = {
+        "취업/직무": "job",
+        "창업/사업": "startup",
+        "주거/자립": "housing",
+        "금융/생활비": "finance",
+        "교육/자격증": "growth",
+        "복지/문화": "welfare"
+    };
+    // 매칭되는 영문명이 없으면 기본값 'welfare' 사용
+    const prefix = map[genre] || "welfare";
+    
+    // 이미지 번호 랜덤 (1~5번) 또는 고정 가능. 현재는 랜덤.
+    const imgIndex = Math.floor(Math.random() * 5) + 1; 
+    return `/static/images/card_images/${prefix}_${imgIndex}.webp`;
 }
 
-// 데이터 초기화 (서버에서 주입된 window 데이터 우선 사용)
-const tinderData = window.tinderData || generatePolicyData(10);
-const allSlideData = window.allSlideData || generatePolicyData(30);
-const myLikedData = generatePolicyData(5);
-
-// 카드 HTML 생성 함수 (수정됨)
+// 카드 HTML 생성 함수 (수정됨: DB 컬럼 반영)
 function createCardHTML(item, isTinder = false) {
-    // [중요] JSON 객체를 HTML 속성에 넣기 위해 따옴표(")를 &quot;로 변환해야 깨지지 않습니다.
-    const jsonString = JSON.stringify(item).replace(/"/g, '&quot;');
+    // 1. DB 데이터 매핑 (undefined 방지 처리)
+    const displayGenre = item.genre || "기타";       // DB 컬럼: genre
+    const displayTitle = item.title || "제목 없음";  // DB 컬럼: title
+    const displayDesc = item.summary || "";         // DB 컬럼: summary
+    const displayDate = item.period || "상시";      // DB 컬럼: period
+    const displayLink = item.link || "";            // DB 컬럼: link (원문 연결용)
+    
+    // 2. 장르 기반 이미지 자동 생성
+    const displayImage = getCategoryImage(displayGenre);
+
+    // 3. 모달에 넘겨줄 데이터 객체 생성 (이미지 경로 포함)
+    const modalData = {
+        title: displayTitle,
+        genre: displayGenre,
+        desc: displayDesc,
+        date: displayDate,
+        image: displayImage,
+        link: displayLink
+    };
+
+    // [중요] JSON 변환 (따옴표 깨짐 방지)
+    const jsonString = JSON.stringify(modalData).replace(/"/g, '&quot;');
 
     if (isTinder) {
-        // [Tinder Card]
+        // [Tinder Card Design]
         const swipeIcons = `
             <div class="swipe-feedback pass absolute top-10 right-10 z-30 opacity-0 transition-none pointer-events-none transform rotate-[15deg]">
                 <div class="border-4 border-gray-500 rounded-xl px-4 py-2 bg-white/90 backdrop-blur-sm shadow-xl">
@@ -70,17 +77,17 @@ function createCardHTML(item, isTinder = false) {
             <div class="policy-card tinder-card absolute top-0 left-0 w-full h-full flex flex-col bg-white overflow-hidden shadow-xl rounded-[30px] cursor-grab" data-id="${item.id}">
                 ${swipeIcons}
                 <div class="card-image w-full h-[320px] bg-gray-50 relative shrink-0">
-                    <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover pointer-events-none">
+                    <img src="${displayImage}" alt="${displayTitle}" class="w-full h-full object-cover pointer-events-none">
                     <div class="absolute bottom-0 w-full h-20 bg-gradient-to-t from-white to-transparent"></div>
                 </div>
                 <div class="card-content flex flex-col justify-between flex-grow p-8 text-left bg-white relative z-10">
                     <div>
-                        <span class="inline-block py-1 px-3 rounded-full bg-orange-50 text-primary-orange text-sm font-bold mb-3 border border-orange-100">${item.category}</span>
-                        <h3 class="card-title text-2xl font-extrabold text-gray-900 leading-tight mb-3 line-clamp-2">${item.title}</h3>
-                        <p class="card-desc text-base text-gray-500 font-medium line-clamp-3 leading-relaxed">${item.desc}</p>
+                        <span class="inline-block py-1 px-3 rounded-full bg-orange-50 text-primary-orange text-sm font-bold mb-3 border border-orange-100">${displayGenre}</span>
+                        <h3 class="card-title text-2xl font-extrabold text-gray-900 leading-tight mb-3 line-clamp-2">${displayTitle}</h3>
+                        <p class="card-desc text-base text-gray-500 font-medium line-clamp-3 leading-relaxed">${displayDesc}</p>
                     </div>
                     <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                        <span class="card-date text-sm text-gray-400 font-bold"><i class="fa-regular fa-clock mr-1"></i> ${item.date}</span>
+                        <span class="card-date text-sm text-gray-400 font-bold"><i class="fa-regular fa-clock mr-1"></i> ${displayDate}</span>
                         
                         <button class="relative z-50 text-sm font-bold text-gray-900 underline decoration-gray-300 underline-offset-4 p-2 hover:text-primary-orange transition-colors" 
                                 data-json="${jsonString}"
@@ -91,22 +98,22 @@ function createCardHTML(item, isTinder = false) {
                 </div>
             </div>`;
     } else {
-        // [Slide Card]
+        // [Slide Card Design]
         return `
             <div class="policy-card relative flex flex-col overflow-hidden rounded-[20px] bg-[#F6F6F7] shadow-sm cursor-pointer hover:shadow-xl transition-all group hover:-translate-y-2 hover:bg-white" 
                  data-json="${jsonString}"
                  onclick="openCardModal(this)">
                 
                 <div class="card-image w-full h-[180px] flex items-end justify-center overflow-hidden bg-white">
-                    <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                    <img src="${displayImage}" alt="${displayTitle}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
                 </div>
                 <div class="card-content p-6 flex flex-col gap-2">
                     <div class="flex justify-between items-center">
-                        <span class="text-xs font-bold text-primary-orange bg-orange-50 px-2 py-1 rounded-md">${item.category}</span>
+                        <span class="text-xs font-bold text-primary-orange bg-orange-50 px-2 py-1 rounded-md">${displayGenre}</span>
                     </div>
-                    <h3 class="card-title text-xl font-extrabold text-[#222] line-clamp-2">${item.title}</h3>
-                    <p class="card-desc text-sm text-[#666] font-medium line-clamp-2">${item.desc}</p>
-                    <span class="card-date text-xs text-[#888] mt-2">${item.date}</span>
+                    <h3 class="card-title text-xl font-extrabold text-[#222] line-clamp-2">${displayTitle}</h3>
+                    <p class="card-desc text-sm text-[#666] font-medium line-clamp-2">${displayDesc}</p>
+                    <span class="card-date text-xs text-[#888] mt-2">${displayDate}</span>
                 </div>
             </div>`;
     }
@@ -121,6 +128,13 @@ class CardSwiper {
     }
     init() {
         if (!this.container) return;
+
+        // [수정 2] 데이터 없음 처리 추가
+        if (!this.data || this.data.length === 0) {
+            this.container.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-gray-400"><p class="text-xl font-bold">표시할 정책이 없습니다.</p><p class="text-sm mt-2">조건을 변경하거나 나중에 다시 시도해주세요.</p></div>';
+            return;
+        }
+
         this.container.innerHTML = '<div class="no-more-cards">모든 카드를 확인했습니다! 🎉</div>';
         [...this.data].reverse().forEach(item => {
             this.container.insertAdjacentHTML('beforeend', createCardHTML(item, true));
@@ -128,19 +142,16 @@ class CardSwiper {
         this.cards = document.querySelectorAll('.tinder-card');
         this.setupEvents();
         if (typeof gsap !== 'undefined') {
-            // [최적화] 모든 카드를 애니메이션하면 렉이 걸리므로, 상위 5개만 움직이게 설정
             gsap.from(".tinder-card:nth-last-child(-n+5)", { y: 100, opacity: 0, duration: 0.8, stagger: 0.1, ease: "back.out(1.7)" });
         }
     }
     setupEvents() {
         this.cards.forEach((card) => { this.addListeners(card); });
 
-        // [NEW] 키보드 이벤트 리스너 추가 (왼쪽/오른쪽 화살표)
         document.addEventListener('keydown', (e) => {
-            // 현재 남아있는 카드 중 가장 위에 있는(DOM상 마지막) 카드 선택
             const currentCards = document.querySelectorAll('.tinder-card');
             if (currentCards.length === 0) return;
-            const topCard = currentCards[currentCards.length - 1]; // 맨 위 카드
+            const topCard = currentCards[currentCards.length - 1];
 
             if (e.key === 'ArrowLeft') {
                 this.swipeCard(topCard, 'left');
@@ -191,11 +202,10 @@ class CardSwiper {
         setTimeout(() => {
             card.remove();
 
-            // [NEW] API 호출 (로그인 상태일 때만)
             const userEmail = localStorage.getItem('userEmail');
             if (userEmail) {
                 const actionType = direction === 'right' ? 'like' : 'pass';
-                const policyId = card.getAttribute('data-id'); // data-id 속성 필요
+                const policyId = card.getAttribute('data-id');
 
                 fetch('/api/mypage/action', {
                     method: 'POST',
@@ -211,68 +221,81 @@ class CardSwiper {
     }
 }
 
-// 정책 상세 모달 열기 (전역 함수)
-window.openModal = function (itemDataEncoded) {
+// [수정 3] 정책 상세 모달 열기 (기존 window.openModal 대체 및 기능 강화)
+window.openCardModal = function (element) {
+    const itemDataEncoded = element.getAttribute('data-json');
     const policyModalEl = document.getElementById('policy-modal');
     if (!policyModalEl) return;
+
     try {
-        const item = JSON.parse(decodeURIComponent(itemDataEncoded));
-        const els = { title: document.getElementById('modal-title'), desc: document.getElementById('modal-desc'), img: document.getElementById('modal-img'), cate: document.getElementById('modal-category'), date: document.getElementById('modal-date') };
+        const item = JSON.parse(itemDataEncoded);
+        
+        // HTML 요소 매핑
+        const els = { 
+            title: document.getElementById('modal-title'), 
+            desc: document.getElementById('modal-desc'), 
+            img: document.getElementById('modal-img'), 
+            cate: document.getElementById('modal-category'), 
+            date: document.getElementById('modal-date'),
+            linkBtn: document.getElementById('btn-modal-link') // HTML에 이 ID를 가진 버튼이 있어야 함
+        };
+
         if (els.title) els.title.innerText = item.title;
         if (els.desc) els.desc.innerText = item.desc;
         if (els.img) els.img.src = item.image;
-        if (els.cate) els.cate.innerText = item.category;
+        if (els.cate) els.cate.innerText = item.genre;
         if (els.date) els.date.innerText = item.date;
+
+        // [신규] 원문 보기 링크 연결
+        if (els.linkBtn) {
+            // 기존 이벤트 제거를 위해 cloneNode 사용하거나 단순히 onclick 덮어쓰기
+            els.linkBtn.onclick = function() {
+                if(item.link && item.link.trim() !== "") {
+                    window.open(item.link, '_blank');
+                } else {
+                    alert("원문 링크가 없습니다.");
+                }
+            };
+        }
+
         policyModalEl.classList.remove('hidden');
         setTimeout(() => { policyModalEl.classList.add('active'); }, 10);
-    } catch (e) { console.error("Data Error:", e); }
+    } catch (e) { console.error("Data Parsing Error:", e); }
 };
 
 // ============================================================
-// [2] Controllers (Auth & Share) - ★ 진짜 서버 통신용 코드 ★
+// [2] Controllers (Auth & Share)
 // ============================================================
 
 const AuthController = {
-    // [상태 관리]
     currentRegion: null,
     pendingCallback: null,
 
-    // 1. 초기화: 이벤트 위임 (버튼이 늦게 생겨도 무조건 클릭 감지)
     init: function () {
         document.addEventListener('click', (e) => {
-            // [수정] 클릭한 요소가 버튼 안의 아이콘(SVG)일 수도 있으니, 가장 가까운 ID 가진 요소를 찾습니다.
             const target = e.target.closest('[id]');
-            if (!target) return; // ID 없는 빈 공간 클릭은 무시
+            if (!target) return;
 
-            // (1) 가입 완료 버튼
             if (target.id === 'btn-signup-submit') {
                 e.preventDefault();
                 this.handleSignup();
             }
-
-            // (2) 로그인 완료 버튼
             if (target.id === 'btn-login-submit') {
                 e.preventDefault();
                 this.handleLogin();
             }
-
-            // (3) 모달 닫기 버튼들 (이제 아이콘 눌러도 닫힘!)
             if (target.id === 'btn-modal-close-icon') {
                 this.closeModal();
             }
             if (target.id === 'btn-modal-browse') {
                 this.closeModal();
-                // 💡 [핵심] 모달 닫은 뒤, 원래 하려던 동작(페이지 이동) 계속 진행
                 if (this.pendingCallback) {
                     this.pendingCallback();
                 }
             }
-
-            // (4) 뷰 전환 버튼들
             if (['btn-promo-login', 'btn-goto-login'].includes(target.id)) this.switchView('login');
             if (['btn-promo-signup', 'btn-goto-signup'].includes(target.id)) this.switchView('signup');
 
-            // (5) 로그인 트리거 (class로 찾기)
             const trigger = e.target.closest('.js-login-trigger');
             if (trigger) {
                 const mode = trigger.dataset.mode || 'login';
@@ -281,7 +304,6 @@ const AuthController = {
         });
     },
 
-    // 2. 모달 열기
     open: function (mode = 'promo', regionName = null, count = 0, callback = null) {
         const modal = document.getElementById('auth-modal');
         const modalContent = document.getElementById('auth-modal-content');
@@ -290,7 +312,6 @@ const AuthController = {
         this.currentRegion = regionName;
         this.pendingCallback = callback;
 
-        // UI 텍스트 업데이트
         const elements = {
             badgeContainer: document.getElementById('signup-region-badge-container'),
             badgeText: document.getElementById('signup-region-badge'),
@@ -319,7 +340,6 @@ const AuthController = {
         this.switchView(mode);
     },
 
-    // 3. 모달 닫기
     closeModal: function () {
         const modal = document.getElementById('auth-modal');
         const modalContent = document.getElementById('auth-modal-content');
@@ -336,7 +356,6 @@ const AuthController = {
         }, 300);
     },
 
-    // 4. 화면 전환
     switchView: function (viewName) {
         ['promo', 'signup', 'login'].forEach(v => {
             const el = document.getElementById(`auth-view-${v}`);
@@ -352,7 +371,6 @@ const AuthController = {
         }
     },
 
-    // 5. [API] 회원가입 처리 (★ 여기가 진짜 핵심입니다!)
     handleSignup: async function () {
         const email = document.getElementById('signup-id').value;
         const password = document.getElementById('signup-pw').value;
@@ -364,7 +382,6 @@ const AuthController = {
         }
 
         try {
-            // 진짜 서버로 데이터 전송!
             const response = await fetch('/api/auth/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -390,7 +407,6 @@ const AuthController = {
         }
     },
 
-    // 6. [API] 로그인 처리 (★ 여기도 진짜!)
     handleLogin: async function () {
         const email = document.getElementById('login-id').value;
         const password = document.getElementById('login-pw').value;
@@ -433,9 +449,7 @@ const AuthController = {
     }
 };
 
-// ShareController는 님이 올리신 코드 그대로 쓰셔도 됩니다.
 const ShareController = {
-    // ... (기존 코드 유지)
     el: document.getElementById('share-modal'),
     input: document.getElementById('share-url-input'),
     btnClose: document.getElementById('btn-share-close'),
@@ -477,10 +491,8 @@ const ShareController = {
 
 window.openAuthModal = function (mode, regionName, count, callback) { AuthController.open(mode, regionName, count, callback); };
 
-// [NEW] Social Login Trigger (Global)
 window.socialLogin = function (provider) {
     if (!['google', 'naver'].includes(provider)) return;
-    // 백엔드 EndPoint로 이동 -> 리다이렉트 -> 로그인 -> Callback -> 메인으로 복귀
     window.location.href = `/api/auth/${provider}/login`;
 };
 
@@ -489,44 +501,34 @@ window.socialLogin = function (provider) {
 // ============================================================
 
 async function checkLoginState() {
-    // [NEW] 0. OAuth 리다이렉트 복귀 처리 (URL 파라미터 확인)
     const urlParams = new URLSearchParams(window.location.search);
-    const socialLogin = urlParams.get('social_login'); // success
+    const socialLogin = urlParams.get('social_login');
 
     if (socialLogin === 'success') {
         const email = urlParams.get('email');
         const name = urlParams.get('name');
 
         if (email && name) {
-            // 로컬 스토리지 저장 (로그인 처리)
             localStorage.setItem('isLoggedIn', 'true');
             localStorage.setItem('userEmail', email);
             localStorage.setItem('userName', name);
-
-            // 깔끔한 URL을 위해 파라미터 제거 (선택 사항)
             window.history.replaceState({}, document.title, window.location.pathname);
-
             alert(`${name}님, 소셜 로그인 성공! 환영합니다.`);
-
-            // [NEW] 메인 페이지로 이동
             window.location.href = '/main.html';
         }
     }
 
-    // 1. 서버에 "나 로그인 맞아?" 물어보기
     try {
         const res = await fetch('/api/auth/verify');
         if (!res.ok) {
-            // 서버가 "너 아닌데?"(401)라고 하면 청소!
             localStorage.clear();
-            return; // 함수 종료
+            return;
         }
     } catch (e) {
         localStorage.clear();
         return;
     }
 
-    // [수정] 변수 선언 및 로컬 스토리지 값 로드 (ReferenceError 해결)
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const userEmail = localStorage.getItem('userEmail');
 
@@ -569,7 +571,6 @@ document.addEventListener("DOMContentLoaded", () => {
     ShareController.init();
     checkLoginState();
 
-    // 햄버거 메뉴
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const closeBtn = document.getElementById('close-btn');
     const menuOverlay = document.getElementById('mobile-menu-overlay');
@@ -631,7 +632,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else { if (document.getElementById("preloader")) document.getElementById("preloader").style.display = "none"; window.playHeaderAnimation(); }
         } else { if (document.getElementById("preloader")) document.getElementById("preloader").style.display = "none"; window.playHeaderAnimation(); }
 
-        // [애플 배너 복구]
+        // Banner Text Cycle
         const icons = document.querySelectorAll('.cycling-icon');
         const keywordSpan = document.getElementById('banner-keyword');
         if (icons.length > 0 && keywordSpan && typeof gsap !== 'undefined') {
@@ -675,29 +676,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // --------------------------------------------------------
-    // [RENDERERS] Cards & MyPage
+    // [RENDERERS] Cards & MyPage (DB 데이터 기반)
     // --------------------------------------------------------
 
-    // [수정 완료] 메인 슬라이드 2줄 렌더링
     const slideRow1 = document.getElementById('slide-row-1');
     const slideRow2 = document.getElementById('slide-row-2');
 
-    // 데이터 복제 (무한 스크롤용)
-    const infiniteData = [...allSlideData, ...allSlideData];
+    // [수정 4] 데이터 없음 처리 및 렌더링
+    if (allSlideData.length > 0) {
+        // 무한 스크롤 느낌을 위해 데이터 복제
+        const infiniteData = [...allSlideData, ...allSlideData];
 
-    if (slideRow1) {
-        slideRow1.innerHTML = infiniteData.map(item => createCardHTML(item, false)).join('');
-    }
-    // 기존에 누락되었던 2번째 줄 체크 로직을 독립적으로 추가
-    if (slideRow2) {
-        slideRow2.innerHTML = infiniteData.map(item => createCardHTML(item, false)).join('');
+        if (slideRow1) {
+            slideRow1.innerHTML = infiniteData.map(item => createCardHTML(item, false)).join('');
+        }
+        if (slideRow2) {
+            slideRow2.innerHTML = infiniteData.map(item => createCardHTML(item, false)).join('');
+        }
+    } else {
+        // 데이터가 없을 때 표시할 UI
+        const emptyMsg = '<div class="w-full text-center py-10 text-gray-500">등록된 정책이 없습니다.</div>';
+        if (slideRow1) slideRow1.innerHTML = emptyMsg;
+        if (slideRow2) slideRow2.innerHTML = '';
     }
 
     // 틴더 카드
     const tinderList = document.getElementById('tinder-list');
     if (tinderList) new CardSwiper(tinderList, tinderData);
 
-    // 마이페이지
     // 마이페이지 (API 연동 버전)
     const mypageList = document.getElementById('mypage-list');
     if (mypageList) {
@@ -706,7 +712,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!userEmail) {
             mypageList.innerHTML = `<div class="empty-state"><p>로그인이 필요한 서비스입니다.</p></div>`;
         } else {
-            // 1. 찜한 정책 목록 가져오기
             fetch(`/api/mypage/likes?user_email=${userEmail}`)
                 .then(res => res.json())
                 .then(data => {
@@ -724,7 +729,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     mypageList.innerHTML = `<div class="empty-state"><p>데이터를 불러오는 중 오류가 발생했습니다.</p></div>`;
                 });
 
-            // 2. 차트 데이터 가져오기
+            // 차트 부분은 동일
             const ctx = document.getElementById('myChart');
             if (ctx && typeof Chart !== 'undefined') {
                 fetch(`/api/mypage/stats?user_email=${userEmail}`)

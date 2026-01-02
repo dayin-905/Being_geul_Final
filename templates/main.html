@@ -284,40 +284,35 @@
     </div>
 
     <script>
-        // [서버 데이터 연동 -- 전역 변수 설정] 
-        // script.js가 로드되기 전에 데이터를 주입해야 합니다.
-        window.tinderData = [
-            {% for policy in policies %}
-        {
-            id: "{{ policy.id }}",
-                title: "{{ policy.title }}",
-                    desc: `{{ policy.summary | default('', true) | replace('`', '') | truncate(100) }}`, 
-            category: "{{ policy.genre }}",
-                date: "{{ policy.period | default('상시 모집', true) }}",
-                    image: "{{ get_policy_image(policy.genre) }}",
-                        link: "{{ policy.link }}",
-                            region: "{{ policy.region }}",
-                                colorCode: "{{ categoryColorMap.get(policy.genre[:2], '#777777') }}"
-        },
-        {% endfor %}
-        ];
+        // [서버 데이터 연동] 
+        // 파이썬에서 만든 리스트를 Jinja2의 'tojson' 필터를 통해 안전한 JSON으로 변환합니다.
+        // 줄바꿈, 따옴표 문제가 자동으로 해결됩니다.
+        
+        window.tinderData = {{ tinder_data_list | tojson | safe }};
+        window.allSlideData = {{ slider_data_list | tojson | safe }};
 
-        window.allSlideData = [
-            {% for policy in slider_policies %}
-        {
-            id: "{{ policy.id }}",
-                title: "{{ policy.title }}",
-                    desc: `{{ policy.summary | default('', true) | replace('`', '') | truncate(80) }}`, 
-            category: "{{ policy.genre }}",
-                date: "{{ policy.period | default('상시 모집', true) }}",
-                    image: "{{ get_policy_image(policy.genre) }}",
-                        link: "{{ policy.link }}",
-                            region: "{{ policy.region }}",
-                                colorCode: "{{ categoryColorMap.get(policy.genre[:2], '#777777') }}"
-        },
-        {% endfor %}
-        ];
+        // 데이터 확인용 로그 (개발자 도구 Console 탭에서 확인 가능)
+        console.log("🔥 로드된 틴더 데이터:", window.tinderData);
+        console.log("🔥 로드된 슬라이드 데이터:", window.allSlideData);
     </script>
+    
+    <script src="/static/script.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+             // ... 기존 로직 (region 처리, 애니메이션 등) 그대로 유지 ...
+             // (이 아래 코드는 건드릴 필요 없습니다)
+             
+             // [안전장치] 만약 데이터가 없으면 경고
+             if (!window.tinderData || window.tinderData.length === 0) {
+                 console.warn("⚠️ 데이터가 로드되지 않았습니다. DB를 확인해주세요.");
+             }
+             
+             // ... (나머지 코드 생략) ...
+        });
+    </script>
+</body>
+</html>
     <script src="/static/script.js"></script>
 
     <script>
