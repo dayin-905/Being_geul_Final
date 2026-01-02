@@ -109,27 +109,103 @@ function openCardModal(element) {
 
         // [핵심 3] 찜하기 버튼 (UI 토글)
         if (els.heartBtn) {
-            // 버튼 초기화 (이미 찜했는지 확인하는 로직은 추후 백엔드 연동 필요)
-            // 우선은 비어있는 하트로 시작한다고 가정
+            // 버튼 초기화
             const icon = els.heartBtn.querySelector('i');
             icon.className = "fa-regular fa-heart text-xl";
             els.heartBtn.classList.remove('border-red-500', 'text-red-500');
+
+            // [NEW] 서버에서 찜 상태 확인 (로그인 시에만)
+            const userEmail = localStorage.getItem('userEmail');
+            if (userEmail && data.id) {
+                fetch(`/api/mypage/check?user_email=${userEmail}&policy_id=${data.id}`)
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.liked) {
+                            icon.className = "fa-solid fa-heart text-xl";
+                            els.heartBtn.classList.add('border-red-500', 'text-red-500');
+                        }
+                    })
+                    .catch(err => console.error("찜 상태 확인 실패:", err));
+            }
 
             // 클릭 이벤트
             els.heartBtn.onclick = function () {
                 // 토글 로직
                 const isActive = icon.classList.contains('fa-solid');
+                const userEmail = localStorage.getItem('userEmail');
+                const policyId = data.id;
+
+                if (!userEmail) {
+                    alert('로그인이 필요한 기능입니다.');
+                    // 선택적: 로그인 창 띄우기
+                    // if (window.openAuthModal) window.openAuthModal('login');
+                    return;
+                }
 
                 if (!isActive) {
                     // 찜하기 상태로 변경 (채워진 하트 + 빨간색)
                     icon.className = "fa-solid fa-heart text-xl";
                     this.classList.add('border-red-500', 'text-red-500');
-                    // TODO: 여기에 백엔드로 '찜하기 API' 요청 보내는 코드 추가
+
+                    // 백엔드 연동: Like
+                    fetch('/api/mypage/action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_email: userEmail,
+                            policy_id: parseInt(policyId),
+                            type: 'like'
+                        })
+                    }).then(res => res.json())
+                        .then(res => {
+                            console.log("찜하기 성공:", res);
+                            // 네비게이션바 근처나 마이페이지 쪽으로 하트가 날아가는 애니메이션 등을 추가하면 좋음
+
+                            // [NEW] 차트 실시간 업데이트
+                            if (window.updateMyPageChart) window.updateMyPageChart();
+                        })
+                        .catch(err => console.error("찜하기 오류:", err));
+
                 } else {
                     // 찜 취소 상태로 변경 (빈 하트 + 회색)
                     icon.className = "fa-regular fa-heart text-xl";
                     this.classList.remove('border-red-500', 'text-red-500');
-                    // TODO: 여기에 백엔드로 '찜 취소 API' 요청 보내는 코드 추가
+
+                    // 백엔드 연동: Unlike
+                    fetch('/api/mypage/action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_email: userEmail,
+                            policy_id: parseInt(policyId),
+                            type: 'unlike'
+                        })
+                    }).then(res => res.json())
+                        .then(res => {
+                            console.log("찜하기 취소:", res);
+
+                            // [NEW] 화면에서 즉시 제거 (마이페이지 등에서 보고 있을 때)
+                            const cardsToRemove = document.querySelectorAll(`.policy-card[data-id='${policyId}']`);
+                            cardsToRemove.forEach(card => {
+                                // 카드가 삭제될 때 부드럽게 사라지게 하려면 애니메이션 추가 가능
+                                card.style.transition = "all 0.3s ease";
+                                card.style.opacity = "0";
+                                card.style.transform = "scale(0.9)";
+                                setTimeout(() => card.remove(), 300);
+                            });
+
+                            // [NEW] 리스트가 비었는지 확인 (마이페이지)
+                            setTimeout(() => {
+                                const mypageList = document.getElementById('mypage-list');
+                                if (mypageList && mypageList.children.length === 0) {
+                                    mypageList.innerHTML = `<div class="empty-state"><i class="fa-regular fa-folder-open"></i><p>아직 찜한 정책이 없어요.</p></div>`;
+                                }
+                            }, 310);
+
+                            // [NEW] 차트 실시간 업데이트
+                            if (window.updateMyPageChart) window.updateMyPageChart();
+                        })
+                        .catch(err => console.error("찜 취소 오류:", err));
                 }
             };
         }

@@ -35,17 +35,34 @@ class StatsDto(BaseModel):
 
 # ==================== [API 엔드포인트] ====================
 
-# 1. 사용자 액션 저장 (좋아요/패스)
+# 1. 사용자 액션 저장 (좋아요/패스/좋아요 취소)
 @router.post("/action")
 def save_user_action(action: ActionCreate, db: Session = Depends(get_db)):
     """
-    사용자의 스와이프 액션(like/pass)을 DB에 저장합니다.
-    중복된 액션(동일 유저, 동일 정책)이 있다면 업데이트하거나 무시할 수 있습니다.
-    여기서는 단순 추가(append) 방식으로 구현합니다.
+    사용자의 스와이프 액션(like/pass) 또는 모달 찜하기(like/unlike)를 처리합니다.
     """
-    # 유효성 검사 등 필요한 로직 추가 가능
-    
-    # DB 저장
+    # 1. 좋아요 취소 (unlike) 처리
+    if action.type == 'unlike':
+        db.query(UserAction).filter(
+            UserAction.user_email == action.user_email,
+            UserAction.policy_id == action.policy_id,
+            UserAction.type == 'like'
+        ).delete()
+        db.commit()
+        return {"message": "Like removed"}
+
+    # 2. 좋아요 (like) 중복 방지 처리
+    if action.type == 'like':
+        existing = db.query(UserAction).filter(
+            UserAction.user_email == action.user_email,
+            UserAction.policy_id == action.policy_id,
+            UserAction.type == 'like'
+        ).first()
+        
+        if existing:
+            return {"message": "Already liked"}
+
+    # 3. 새로운 액션 저장 (like or pass)
     new_action = UserAction(
         user_email=action.user_email,
         policy_id=action.policy_id,
@@ -55,6 +72,20 @@ def save_user_action(action: ActionCreate, db: Session = Depends(get_db)):
     db.commit()
     
     return {"message": "Action saved", "action_id": new_action.id}
+
+# 1-1. 특정 정책에 대한 좋아요 여부 확인 (버튼 활성화용)
+@router.get("/check")
+def check_action_status(user_email: str, policy_id: int, db: Session = Depends(get_db)):
+    """
+    특정 유저가 특정 정책을 이미 'like' 했는지 확인합니다.
+    """
+    existing = db.query(UserAction).filter(
+        UserAction.user_email == user_email,
+        UserAction.policy_id == policy_id,
+        UserAction.type == 'like'
+    ).first()
+    
+    return {"liked": True if existing else False}
 
 
 # 2. 찜한 정책 목록 조회 (마이페이지용)

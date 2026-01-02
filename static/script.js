@@ -95,6 +95,7 @@ function createCardHTML(item, isTinder = false) {
         return `
             <div class="policy-card relative flex flex-col overflow-hidden rounded-[20px] bg-[#F6F6F7] shadow-sm cursor-pointer hover:shadow-xl transition-all group hover:-translate-y-2 hover:bg-white" 
                  data-json="${jsonString}"
+                 data-id="${item.id}"
                  onclick="openCardModal(this)">
                 
                 <div class="card-image w-full h-[180px] flex items-end justify-center overflow-hidden bg-white">
@@ -725,29 +726,47 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
             // 2. 차트 데이터 가져오기
-            const ctx = document.getElementById('myChart');
-            if (ctx && typeof Chart !== 'undefined') {
-                fetch(`/api/mypage/stats?user_email=${userEmail}`)
+
+            // 차트 업데이트 함수 (전역 등록)
+            window.updateMyPageChart = function () {
+                const ctx = document.getElementById('myChart');
+                const currentUserEmail = localStorage.getItem('userEmail');
+                if (!ctx || typeof Chart === 'undefined' || !currentUserEmail) return;
+
+                fetch(`/api/mypage/stats?user_email=${currentUserEmail}`)
                     .then(res => res.json())
                     .then(stats => {
-                        new Chart(ctx, {
-                            type: 'radar',
-                            data: {
-                                labels: stats.labels,
-                                datasets: [{
-                                    label: '나의 관심도',
-                                    data: stats.data,
-                                    backgroundColor: 'rgba(244, 130, 69, 0.2)',
-                                    borderColor: '#F48245',
-                                    pointBackgroundColor: '#F48245',
-                                    borderWidth: 2
-                                }]
-                            },
-                            options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: '#eee' }, grid: { color: '#eee' }, pointLabels: { font: { size: 12, family: 'Pretendard' }, color: '#666' }, ticks: { display: false, maxTicksLimit: 5 } } }, plugins: { legend: { display: false } } }
-                        });
+                        const existingChart = Chart.getChart(ctx); // 기존 차트 인스턴스 확인
+
+                        if (existingChart) {
+                            // 기존 차트가 있으면 데이터만 업데이트
+                            existingChart.data.labels = stats.labels;
+                            existingChart.data.datasets[0].data = stats.data;
+                            existingChart.update();
+                        } else {
+                            // 차트가 없으면 새로 생성
+                            new Chart(ctx, {
+                                type: 'radar',
+                                data: {
+                                    labels: stats.labels,
+                                    datasets: [{
+                                        label: '나의 관심도',
+                                        data: stats.data,
+                                        backgroundColor: 'rgba(244, 130, 69, 0.2)',
+                                        borderColor: '#F48245',
+                                        pointBackgroundColor: '#F48245',
+                                        borderWidth: 2
+                                    }]
+                                },
+                                options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: '#eee' }, grid: { color: '#eee' }, pointLabels: { font: { size: 12, family: 'Pretendard' }, color: '#666' }, ticks: { display: false, maxTicksLimit: 5 } } }, plugins: { legend: { display: false } } }
+                            });
+                        }
                     })
-                    .catch(err => console.error("Stats Load Error:", err));
-            }
+                    .catch(err => console.error("Stats Update Error:", err));
+            };
+
+            // 최초 실행
+            window.updateMyPageChart();
         }
     }
 });
