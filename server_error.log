@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/apps/Being_geul_Final/routers/auth.py", line 36, in signup
+    hashed_password = pwd_context.hash(user.password)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/Being_geul_Final/.venv/lib/python3.12/site-packages/passlib/context.py", line 2258, in hash
+    return record.hash(secret, **kwds)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/Being_geul_Final/.venv/lib/python3.12/site-packages/passlib/handlers/argon2.py", line 664, in hash
+    cls._stub_requires_backend()
+  File "/apps/Being_geul_Final/.venv/lib/python3.12/site-packages/passlib/utils/handlers.py", line 2254, in _stub_requires_backend
+    cls.set_backend()
+  File "/apps/Being_geul_Final/.venv/lib/python3.12/site-packages/passlib/utils/handlers.py", line 2156, in set_backend
+    return owner.set_backend(name, dryrun=dryrun)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/apps/Being_geul_Final/.venv/lib/python3.12/site-packages/passlib/utils/handlers.py", line 2176, in set_backend
+    raise default_error
+passlib.exc.MissingBackendError: argon2: no backends available -- recommend you install one (e.g. 'pip install argon2_cffi')
