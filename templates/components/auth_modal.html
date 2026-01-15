@@ -74,7 +74,9 @@
             <div class="w-full space-y-3 mb-6">
                 <!-- [수정] 이름 입력창 추가 -->
                 <input type="text" id="signup-name" placeholder="이름 (닉네임)" class="auth-input">
-                <input type="text" id="signup-id" placeholder="사용할 아이디" class="auth-input">
+                <input type="email" id="signup-id" placeholder="이메일 주소 (user@example.com)" class="auth-input">
+                <p id="email-error-msg" class="text-left text-xs text-red-500 font-bold mt-1 hidden ml-1">올바른 이메일 형식이
+                    아닙니다.</p>
                 <div class="relative w-full">
                     <input type="password" id="signup-pw" placeholder="비밀번호 (4자리 이상)" class="auth-input pr-10">
                 </div>
@@ -137,3 +139,48 @@
         </div>
     </div>
 </div>
+
+<script>
+    // [inline] 이메일 형식 리얼타임 검증
+    document.addEventListener('DOMContentLoaded', () => {
+        const emailInput = document.getElementById('signup-id');
+        const emailErrorMsg = document.getElementById('email-error-msg');
+        const signupBtn = document.getElementById('btn-signup-submit');
+
+        if (emailInput && emailErrorMsg && signupBtn) {
+            // 초기 상태: 버튼 비활성화 (입력 전이므로)
+            // 필요하다면 주석 해제: signupBtn.disabled = true;
+
+            emailInput.addEventListener('input', () => {
+                const email = emailInput.value.trim();
+                // 정규표현식: 간단한 이메일 포맷 체크
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                // 값이 없으면 에러 숨김, 값이 있는데 형식이 틀리면 에러 표시
+                if (email.length > 0 && !emailRegex.test(email)) {
+                    // (1) 유효하지 않음
+                    emailErrorMsg.classList.remove('hidden');
+                    emailInput.classList.add('border-red-500', 'focus:ring-red-200');
+                    emailInput.classList.remove('focus:ring-primary-teal'); // 기존 focus 색상 제거
+
+                    signupBtn.disabled = true;
+                    signupBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    // (2) 유효함 (또는 빈 값일 때 에러는 가림)
+                    emailErrorMsg.classList.add('hidden');
+                    emailInput.classList.remove('border-red-500', 'focus:ring-red-200');
+                    emailInput.classList.add('focus:ring-primary-teal');
+
+                    // 빈 값이 아니면 버튼 활성화
+                    if (email.length > 0) {
+                        signupBtn.disabled = false;
+                        signupBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        // 빈 값이면 버튼 비활성화? (기획에 따라 다름, 여기선 에러만 안 띄움)
+                        // signupBtn.disabled = true; 
+                    }
+                }
+            });
+        }
+    });
+</script>

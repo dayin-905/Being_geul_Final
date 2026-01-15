@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const closeModal = () => {
         if (!modal) return;
         modal.classList.remove('active');
-        document.body.style.overflow = ''; // 스크롤 복구
+        // document.body.style.overflow = ''; // 스크롤바 유지했으므로 복구 불필요
         setTimeout(() => {
             modal.classList.add('hidden');
         }, 300);
@@ -29,9 +29,20 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // 2. 카드 클릭 시 호출되는 함수 (HTML onclick="openCardModal(this)"와 연결)
-function openCardModal(element) {
+window.openCardModal = function (element) {
     const modal = document.getElementById('policy-modal');
     if (!modal) return;
+
+    // [수정] 전역 변수 충돌 방지를 위해 함수 내부로 이동
+    const GENRE_COLORS = {
+        "취업": { main: "#4A9EA8", bg: "#F0FDFA" }, "취업/직무": { main: "#4A9EA8", bg: "#F0FDFA" },
+        "주거": { main: "#F48245", bg: "#FFF7ED" }, "주거/자립": { main: "#F48245", bg: "#FFF7ED" },
+        "금융": { main: "#D9B36C", bg: "#FEFCE8" }, "금융/생활비": { main: "#D9B36C", bg: "#FEFCE8" },
+        "창업": { main: "#FF5A5F", bg: "#FEF2F2" }, "창업/사업": { main: "#FF5A5F", bg: "#FEF2F2" },
+        "복지": { main: "#A855F7", bg: "#FAF5FF" }, "복지/문화": { main: "#A855F7", bg: "#FAF5FF" },
+        "교육": { main: "#3B82F6", bg: "#EFF6FF" }, "교육/자격증": { main: "#3B82F6", bg: "#EFF6FF" },
+        "default": { main: "#777777", bg: "#F3F4F6" }
+    };
 
     // 2-1. 데이터 가져오기 (HTML 태그의 data-json 속성 파싱)
     const jsonStr = element.getAttribute('data-json');
@@ -44,6 +55,7 @@ function openCardModal(element) {
         const els = {
             img: document.getElementById('modal-img'),
             category: document.getElementById('modal-category'),
+            region: document.getElementById('modal-region'), // [NEW] 지역 뱃지
             title: document.getElementById('modal-title'),
             desc: document.getElementById('modal-desc'),
             date: document.getElementById('modal-date'),
@@ -57,12 +69,30 @@ function openCardModal(element) {
         // [이미지]
         if (els.img) {
             // data.image가 없으면 DB의 img, 그것도 없으면 기본 이미지
-            els.img.src = data.image || data.img || '/static/images/card_images/job_1.webp';
+            els.img.src = data.image || data.img || '/static/images/card_images/default.png';
         }
 
-        // [카테고리] DB 칼럼: genre (없으면 category)
+        // [카테고리 & 색상 적용]
+        const genre = data.genre || data.category || '기타';
+        const colors = GENRE_COLORS[genre.split('/')[0]] || GENRE_COLORS[genre] || GENRE_COLORS['default']; // '/' 앞부분으로 매칭 시도
+
         if (els.category) {
-            els.category.innerText = data.genre || data.category || '기타';
+            els.category.innerText = genre;
+            // [NEW] 카테고리 뱃지 색상 적용
+            els.category.style.backgroundColor = colors.bg;
+            els.category.style.color = colors.main;
+            // 테두리 제거 (기존 디자인 유지)
+            els.category.style.border = 'none';
+        }
+
+        // [지역] DB 칼럼: region (값이 없으면 숨김 처리)
+        if (els.region) {
+            if (data.region) {
+                els.region.innerText = data.region;
+                els.region.style.display = ''; // 보이기
+            } else {
+                els.region.style.display = 'none'; // 숨기기
+            }
         }
 
         // [제목] DB 칼럼: title
@@ -83,6 +113,9 @@ function openCardModal(element) {
 
         // [핵심 1] 원문 보러 가기 (DB 칼럼: link)
         if (els.linkBtn) {
+            // [롤백] 버튼 배경색 변경 로직 제거 (기본 회색 유지)
+            // els.linkBtn.style.backgroundColor = colors.main; 
+
             if (data.link) {
                 els.linkBtn.href = data.link; // href 속성에 URL 주입
                 els.linkBtn.classList.remove('opacity-50', 'pointer-events-none'); // 활성화
@@ -99,44 +132,158 @@ function openCardModal(element) {
             // 기존 이벤트 리스너 중복 방지를 위해 onclick 속성으로 재할당
             els.shareBtn.onclick = () => {
                 const shareUrl = data.link || window.location.href; // 링크가 있으면 그 링크, 없으면 현재 페이지 주소
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert('정책 링크가 복사되었습니다!');
-                }).catch(err => {
-                    console.error('복사 실패:', err);
-                });
+
+                // [수정] 복사 로직 개선 (보안 컨텍스트/Fallback 지원)
+                const copyToClipboard = (text) => {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        return navigator.clipboard.writeText(text);
+                    } else {
+                        // Fallback: textarea를 생성하여 select 후 execCommand 사용
+                        const textArea = document.createElement("textarea");
+                        textArea.value = text;
+                        textArea.style.position = "fixed";
+                        textArea.style.left = "-9999px";
+                        document.body.appendChild(textArea);
+                        textArea.focus();
+                        textArea.select();
+                        return new Promise((resolve, reject) => {
+                            try {
+                                const successful = document.execCommand('copy');
+                                if (successful) resolve();
+                                else reject(new Error('Copy command failed'));
+                            } catch (err) {
+                                reject(err);
+                            } finally {
+                                document.body.removeChild(textArea);
+                            }
+                        });
+                    }
+                };
+
+                copyToClipboard(shareUrl)
+                    .then(() => {
+                        alert('정책 링크가 복사되었습니다!');
+                    })
+                    .catch(err => {
+                        console.error('복사 실패:', err);
+                        // 최후의 수단: 사용자에게 링크 보여주기
+                        prompt('클립보드 접근이 제한되어 있습니다. 아래 링크를 직접 복사해주세요.', shareUrl);
+                    });
             };
         }
 
         // [핵심 3] 찜하기 버튼 (UI 토글)
         if (els.heartBtn) {
-            // 버튼 초기화 (이미 찜했는지 확인하는 로직은 추후 백엔드 연동 필요)
-            // 우선은 비어있는 하트로 시작한다고 가정
+            // 버튼 초기화
             const icon = els.heartBtn.querySelector('i');
             icon.className = "fa-regular fa-heart text-xl";
             els.heartBtn.classList.remove('border-red-500', 'text-red-500');
+
+            // [NEW] 서버에서 찜 상태 확인 (로그인 시에만)
+            const userEmail = localStorage.getItem('userEmail');
+            if (userEmail && data.id) {
+                fetch(`/api/mypage/check?user_email=${userEmail}&policy_id=${data.id}`)
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.liked) {
+                            icon.className = "fa-solid fa-heart text-xl";
+                            els.heartBtn.classList.add('border-red-500', 'text-red-500');
+                        }
+                    })
+                    .catch(err => console.error("찜 상태 확인 실패:", err));
+            }
 
             // 클릭 이벤트
             els.heartBtn.onclick = function () {
                 // 토글 로직
                 const isActive = icon.classList.contains('fa-solid');
+                const userEmail = localStorage.getItem('userEmail');
+                const policyId = data.id;
+
+                if (!userEmail) {
+                    alert('로그인이 필요한 기능입니다.');
+                    // 선택적: 로그인 창 띄우기
+                    // if (window.openAuthModal) window.openAuthModal('login');
+                    return;
+                }
 
                 if (!isActive) {
                     // 찜하기 상태로 변경 (채워진 하트 + 빨간색)
                     icon.className = "fa-solid fa-heart text-xl";
                     this.classList.add('border-red-500', 'text-red-500');
-                    // TODO: 여기에 백엔드로 '찜하기 API' 요청 보내는 코드 추가
+
+                    // 백엔드 연동: Like
+                    fetch('/api/mypage/action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_email: userEmail,
+                            policy_id: parseInt(policyId),
+                            type: 'like'
+                        })
+                    }).then(res => res.json())
+                        .then(res => {
+                            console.log("찜하기 성공:", res);
+                            // 네비게이션바 근처나 마이페이지 쪽으로 하트가 날아가는 애니메이션 등을 추가하면 좋음
+
+                            // [NEW] 차트 실시간 업데이트
+                            if (window.updateMyPageChart) window.updateMyPageChart();
+
+                            // [NEW] 프로필(활동 지수) 실시간 업데이트
+                            if (window.loadUserProfile) window.loadUserProfile();
+                        })
+                        .catch(err => console.error("찜하기 오류:", err));
+
                 } else {
                     // 찜 취소 상태로 변경 (빈 하트 + 회색)
                     icon.className = "fa-regular fa-heart text-xl";
                     this.classList.remove('border-red-500', 'text-red-500');
-                    // TODO: 여기에 백엔드로 '찜 취소 API' 요청 보내는 코드 추가
+
+                    // 백엔드 연동: Unlike
+                    fetch('/api/mypage/action', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_email: userEmail,
+                            policy_id: parseInt(policyId),
+                            type: 'unlike'
+                        })
+                    }).then(res => res.json())
+                        .then(res => {
+                            console.log("찜하기 취소:", res);
+
+                            // [NEW] 화면에서 즉시 제거 (마이페이지 등에서 보고 있을 때)
+                            const cardsToRemove = document.querySelectorAll(`.policy-card[data-id='${policyId}']`);
+                            cardsToRemove.forEach(card => {
+                                // 카드가 삭제될 때 부드럽게 사라지게 하려면 애니메이션 추가 가능
+                                card.style.transition = "all 0.3s ease";
+                                card.style.opacity = "0";
+                                card.style.transform = "scale(0.9)";
+                                setTimeout(() => card.remove(), 300);
+                            });
+
+                            // [NEW] 리스트가 비었는지 확인 (마이페이지)
+                            setTimeout(() => {
+                                const mypageList = document.getElementById('mypage-list');
+                                if (mypageList && mypageList.children.length === 0) {
+                                    mypageList.innerHTML = `<div class="empty-state"><i class="fa-regular fa-folder-open"></i><p>아직 찜한 정책이 없어요.</p></div>`;
+                                }
+                            }, 310);
+
+                            // [NEW] 차트 실시간 업데이트
+                            if (window.updateMyPageChart) window.updateMyPageChart();
+
+                            // [NEW] 프로필(활동 지수) 실시간 업데이트
+                            if (window.loadUserProfile) window.loadUserProfile();
+                        })
+                        .catch(err => console.error("찜 취소 오류:", err));
                 }
             };
         }
 
         // 2-4. 모달 보여주기
         modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // 배경 스크롤 막기
+        // document.body.style.overflow = 'hidden'; // [수정] 스크롤바 유지 (화면 덜컹거림 방지)
 
         // 애니메이션 효과
         setTimeout(() => {

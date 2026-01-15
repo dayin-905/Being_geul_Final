@@ -1,5 +1,5 @@
 # [수정] String, ForeignKey 추가, relationship 추가
-from sqlalchemy import Column, Integer, Text, String, DateTime, Date, ForeignKey
+from sqlalchemy import Column, Integer, Text, String, DateTime, Date, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from database import Base
@@ -19,6 +19,7 @@ class Policy(Base):
     created_at = Column(DateTime)
     end_date = Column(Date)
     view_count = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True) # [NEW] 공개 여부 (True: 모집중, False: 마감)
 
 # 2. 사용자 테이블 (신규)
 class User(Base):
@@ -35,6 +36,10 @@ class User(Base):
 
     # [NEW] 유료 멤버십 등급 (free / premium)
     subscription_level = Column(String, default="free")
+    
+    # [NEW] 프로필 아이콘 (avatar_1 ~ avatar_6)
+    profile_icon = Column(String, default="avatar_1")
+
     # [NEW] 관계 설정 (유저가 지워지면 행동 로그도 지워짐)
     actions = relationship("UserAction", back_populates="user", cascade="all, delete")
 
@@ -123,6 +128,9 @@ def normalize_region_name(region):
 # 4. 카테고리별 이미지 선택 함수
 def get_image_for_category(category: str) -> str:
     cat_code = "welfare"
+    if not category:  # Handle None or empty string
+        category = ""
+        
     if "주거" in category:
         cat_code = "housing"
     elif "금융" in category:

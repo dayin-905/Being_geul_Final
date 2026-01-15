@@ -77,7 +77,31 @@
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8">
             <div class="max-w-7xl mx-auto">
-                <h1 class="text-3xl font-bold text-gray-800 mb-8">Users Management</h1>
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                    <h1 class="text-3xl font-bold text-gray-800">Users Management</h1>
+
+                    <!-- Search & Filter Form -->
+                    <form class="flex w-full sm:w-auto gap-2" method="get">
+                        <div class="relative w-full sm:w-64">
+                            <input type="text" name="q" value="{{ q }}" placeholder="Search Name or Email..."
+                                class="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9EA8] focus:border-transparent">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <select name="level" onchange="this.form.submit()"
+                            class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#4A9EA8]">
+                            <option value="">All Levels</option>
+                            <option value="free" {% if level=='free' %}selected{% endif %}>Free</option>
+                            <option value="premium" {% if level=='premium' %}selected{% endif %}>Premium</option>
+                            <option value="admin" {% if level=='admin' %}selected{% endif %}>Admin</option>
+                        </select>
+                    </form>
+                </div>
 
                 <div class="bg-white shadow-md rounded-lg overflow-hidden">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -173,6 +197,7 @@
                             class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             <option value="free">Free</option>
                             <option value="premium">Premium</option>
+                            <option value="admin" class="text-red-600 font-bold">Admin (Caution)</option>
                         </select>
                     </div>
 

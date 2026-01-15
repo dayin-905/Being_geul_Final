@@ -25,11 +25,19 @@
         #svg-container svg {
             width: 100% !important;
             height: auto !important;
-            max-height: 80vh !important;
+            max-height: 60vh !important;
+            /* 모바일 기본: 헤더 공간 확보를 위해 축소 */
             max-width: 100% !important;
             display: block;
             transform-origin: center center;
             overflow: visible;
+        }
+
+        @media (min-width: 768px) {
+            #svg-container svg {
+                max-height: 70vh !important;
+                /* 데스크탑에서는 조금 더 크게 */
+            }
         }
 
         /* [2] 퍼즐 조각 스타일 */
@@ -37,6 +45,25 @@
             cursor: pointer;
             transform-style: preserve-3d;
             transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* [NEW] 지도 숨쉬는 효과 (Alive Effect) */
+        @keyframes breathe {
+
+            0%,
+            100% {
+                filter: drop-shadow(0px 4px 0px #4A9EA8) brightness(1);
+                transform: translateZ(0);
+            }
+
+            50% {
+                filter: drop-shadow(0px 6px 2px #4A9EA8) brightness(1.05);
+                transform: translateZ(5px);
+            }
+        }
+
+        .region-alive {
+            animation: breathe 3s ease-in-out infinite;
         }
 
         g.puzzle-piece path,
@@ -124,6 +151,25 @@
             font-weight: 700;
         }
 
+        /* [NEW] CTA 버튼 펄스 효과 */
+        @keyframes subtle-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(74, 158, 168, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(74, 158, 168, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(74, 158, 168, 0);
+            }
+        }
+
+        .animate-subtle-pulse {
+            animation: subtle-pulse 2s infinite;
+        }
+
         /* 모달 스타일 (auth-input 등 공통 스타일은 auth_modal.html CSS와 공유됨) */
         .auth-input {
             width: 100%;
@@ -169,22 +215,67 @@
                 background-position: 750px 0, 775px 25px, 800px 50px;
             }
         }
+
+        /* [MOBILE UX START] 모바일 바텀 시트 스타일 */
+        #mobile-bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(110%);
+            /* 기본적으로 숨김 */
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+            padding: 24px 20px 40px 20px;
+            /* 하단 여백 넉넉히 */
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        #mobile-bottom-sheet.active {
+            transform: translateY(0);
+        }
+
+        /* 지도가 시트에 가려지지 않게 밀어올리는 효과 */
+        .map-shifted {
+            transition: transform 0.3s ease;
+            transform: translateY(-20vh) !important;
+            /* 지도 전체를 위로 20% 이동 */
+        }
+
+        /* [MOBILE UX] 헤더 숨김 처리 (지도와 겹침 방지) */
+        #intro-header {
+            transition: all 0.5s ease;
+        }
+
+        #intro-header.header-hidden {
+            opacity: 0;
+            transform: translateY(-50px);
+            pointer-events: none;
+        }
+
+        /* [MOBILE UX END] */
     </style>
 </head>
 
-<body class="text-gray-900 overflow-hidden h-screen flex flex-col relative font-sans">
+<body class="text-gray-900 overflow-hidden h-screen flex flex-col relative font-sans py-4 md:py-8">
     <div id="transition-overlay"></div>
     <div id="intro-gate"
         class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-gray-50/90 backdrop-blur-md transition-all duration-700 hidden">
         <div class="text-center space-y-8 opacity-0 translate-y-10" id="intro-content">
             <div class="space-y-2">
-                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight">당신의 <span
+                <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight break-keep">당신의 <span
                         class="text-[#4A9EA8]">지역</span>을<br>탐색해보세요</h1>
                 <p class="text-gray-500 text-lg">내가 사는 곳의 청년 정책을 가장 쉽고 빠르게.</p>
             </div>
             <div class="flex flex-col gap-3 w-full max-w-xs mx-auto">
                 <button id="btn-start"
-                    class="w-full py-4 bg-[#4A9EA8] hover:bg-[#3b858e] text-white font-bold rounded-xl shadow-lg shadow-teal-500/30 transition-all hover:-translate-y-1 text-lg flex items-center justify-center gap-2">
+                    class="w-full py-4 bg-[#4A9EA8] hover:bg-[#3b858e] text-white font-bold rounded-xl shadow-lg shadow-teal-500/30 transition-all hover:-translate-y-1 text-lg flex items-center justify-center gap-2 animate-subtle-pulse">
                     <span>지도에서 지역 찾기</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -216,19 +307,43 @@
         </button>
     </div>
 
+    <!-- [NEW] 로그인 상태 표시 (우측 상단) - 로그아웃 기능 추가 -->
+    <div id="user-status" class="fixed bottom-6 right-6 z-50 hidden pointer-events-auto group">
+        <div
+            class="bg-white/90 backdrop-blur px-4 py-2 rounded-full shadow-lg border border-gray-100 flex items-center gap-2 transition-all hover:pr-3 cursor-default">
+            <div class="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+            <span id="user-name-display" class="font-bold text-gray-700 text-sm"></span>
+
+            <!-- [UX 개선] 텍스트 대신 아이콘으로 로그아웃 버튼 표시 -->
+            <button id="btn-landing-logout"
+                class="ml-2 w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                title="로그아웃">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
     <div id="info-tooltip">
         <div class="tooltip-line"></div>
         <div class="tooltip-content"><span class="tooltip-badge">Region</span>
             <h3 class="tooltip-title">지역명</h3>
-            <p class="tooltip-count">데이터 : <span>0</span>건</p>
+            <p class="tooltip-count">정책 수 : <span>0</span></p>
         </div>
     </div>
 
+
+
     <div id="main-content"
         class="relative w-full h-full flex flex-col items-center justify-center opacity-0 hidden p-4">
-        <header class="text-center z-10 flex-none mb-6 md:mb-10 pointer-events-none">
-            <h1 class="text-3xl md:text-4xl font-bold tracking-tighter mb-2" id="header-title">쓱쓱 프로젝트</h1>
-            <p class="text-sm md:text-base text-gray-500" id="header-desc">지도를 클릭하여 지역별 뉴스를 확인하세요</p>
+        <header id="intro-header" class="text-center z-10 flex-none mb-6 md:mb-10 pointer-events-none px-4">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-2 break-keep"
+                id="header-title">쓱-쓱 훑어
+                보는<br>청년 정책 소식</h1>
+            <p class="text-gray-500 text-lg leading-relaxed break-keep" id="header-desc">지도를 클릭하여 지역별 뉴스를 확인하세요</p>
         </header>
         <main id="svg-container" class="w-full max-w-5xl flex items-center justify-center flex-1"></main>
     </div>
@@ -254,6 +369,19 @@
 
         // [1] 지도 이벤트 초기화 함수 (기존 기능 유지)
         function initMapEvents() {
+            // [NEW] 툴팁 설정값 (사용자 커스터마이징 영역)
+            const TOOLTIP_CONFIG = {
+                LINE_MARGIN_X: 10,        // 좌우 여백 (px)
+
+                // [!] 여기가 '제주도' 등 하단 툴팁의 높이(지도와의 간격)를 조절하는 곳입니다!
+                BOTTOM_ELEVATION_Y: -20,   // 수치가 클수록 더 높이 뜹니다.
+
+                OFFSET_TOP_FACTOR: 0.3,   // 상단 배치 시 요소 높이의 몇% 지점에 맞출지 (0.3 = 30%)
+                BOTTOM_THRESHOLD: 0.75,   // 화면 하단 몇% 지점부터 위로 띄울지 (0.75 = 75%)
+                LINE_LENGTH_DEFAULT: 80,  // 기본 연결선 길이
+                LINE_LENGTH_BOTTOM: 50    // 하단 연결선 길이
+            };
+
             const svgElement = document.querySelector('#svg-container svg');
             if (!svgElement) return;
             svgElement.removeAttribute('width'); svgElement.removeAttribute('height');
@@ -265,6 +393,9 @@
             const allElements = svgElement.querySelectorAll('g, path');
             let tooltipTimeline = null;
 
+            // [NEW] 랜덤으로 몇 개의 퍼즐에 '살아있는' 효과 부여
+            const activeElements = [];
+
             allElements.forEach(element => {
                 const rawId = element.id || '';
                 const regionId = rawId.trim();
@@ -275,63 +406,196 @@
 
                 if (activeIds.includes(regionId)) {
                     element.classList.add('puzzle-piece');
+                    activeElements.push(element); // 활동 요소 수집
 
-                    // 툴팁 이벤트
-                    element.addEventListener('mouseenter', function () {
-                        if (this.tagName.toLowerCase() === 'path' || this.tagName.toLowerCase() === 'g') this.parentNode.appendChild(this);
-                        const data = currentConfig.db[regionId] || { name: 'Unknown', count: 0 };
-                        tTitle.innerText = data.name; tCountSpan.innerText = data.count.toLocaleString();
-                        tooltip.style.display = 'flex';
-                        const rect = element.getBoundingClientRect();
-                        const isLeft = (!isDetailMode) ? (currentConfig.leftSideIds || []).includes(regionId) : (rect.left + rect.width / 2) < (window.innerWidth / 2);
-                        const tLine = tooltip.querySelector('.tooltip-line'); const tContent = tooltip.querySelector('.tooltip-content');
-                        if (isLeft) {
-                            tooltip.style.flexDirection = 'row-reverse'; tLine.style.marginRight = '0px'; tLine.style.marginLeft = '10px'; tLine.style.transformOrigin = 'right center';
-                            tContent.style.alignItems = 'flex-end';
-                            tooltip.style.left = 'auto'; tooltip.style.right = `${window.innerWidth - (rect.left + rect.width * 0.2)}px`; tooltip.style.top = `${rect.top + rect.height * 0.3}px`;
-                        } else {
-                            tooltip.style.flexDirection = 'row'; tLine.style.marginRight = '10px'; tLine.style.marginLeft = '0px'; tLine.style.transformOrigin = 'left center';
-                            tContent.style.alignItems = 'flex-start';
-                            tooltip.style.right = 'auto'; tooltip.style.left = `${rect.right - rect.width * 0.2}px`; tooltip.style.top = `${rect.top + rect.height * 0.3}px`;
-                        }
-                        if (tooltipTimeline) tooltipTimeline.kill();
-                        tooltipTimeline = gsap.timeline();
-                        tooltipTimeline.set(tLine, { width: 0 }).set(tContent, { opacity: 0, y: 10 }).to(tLine, { width: 80, duration: 0.4, ease: "power2.out" }).to(tContent, { opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.7)" }, "-=0.2");
-                    });
+                    // [MOBILE UX START] 모바일/데스크탑 분기
+                    const isMobile = window.innerWidth <= 768;
 
-                    element.addEventListener('mouseleave', function () { if (tooltipTimeline) tooltipTimeline.kill(); tooltip.style.display = 'none'; });
+                    if (isMobile) {
+                        // 1. 모바일: 터치(Click) 시 바텀 시트 오픈
+                        element.addEventListener('click', function (e) {
+                            e.stopPropagation(); // 배경 클릭과 구분
 
-                    // 클릭 이벤트
-                    element.addEventListener('click', (e) => {
-                        e.stopPropagation(); tooltip.style.display = 'none';
-                        const data = currentConfig.db[regionId];
-                        const hasDetailMap = REGION_DATA.hasOwnProperty(regionId);
-                        const targetUrl = `main.html?region=${regionId}&anim=1`;
+                            // 데이터 가져오기
+                            const data = currentConfig.db[regionId] || { name: 'Unknown', count: 0 };
+                            const nationalNum = data.national || 0;
+                            const localNum = data.local || 0;
 
-                        if (!isDetailMode && hasDetailMap) {
-                            performTransition(() => { window.location.search = `?region=${regionId}`; });
-                            return;
-                        }
-                        console.log("현재 로그인 상태:", isLoggedIn); // <--- 이 줄을 추가!
-                        if (localStorage.getItem('isLoggedIn') === 'true') {
-                            performTransition(() => { window.location.href = targetUrl; });
-                        } else {
-                            if (window.openAuthModal) {
-                                window.openAuthModal('promo', data.name, data.count, () => {
-                                    performTransition(() => { window.location.href = targetUrl; });
-                                });
+                            // 시트 내용 채우기
+                            document.getElementById('sheet-title').innerText = data.name;
+                            document.getElementById('sheet-count').innerText = data.count.toLocaleString();
+                            document.getElementById('sheet-desc').innerText = `전국 ${nationalNum.toLocaleString()} + 지역 ${localNum.toLocaleString()}`;
+
+                            // 시트 활성화 & 지도 밀어올리기
+                            const sheet = document.getElementById('mobile-bottom-sheet');
+                            const mapContainer = document.getElementById('svg-container');
+                            const introHeader = document.getElementById('intro-header'); // [NEW]
+
+                            sheet.classList.add('active');
+                            mapContainer.classList.add('map-shifted');
+                            if (introHeader) introHeader.classList.add('header-hidden'); // [NEW]
+
+                            // 버튼 액션 연결
+                            const btnAction = document.getElementById('btn-sheet-action');
+                            btnAction.onclick = () => {
+                                const hasDetailMap = REGION_DATA.hasOwnProperty(regionId);
+                                const targetUrl = `main.html?region=${regionId}&anim=1`;
+                                if (!isDetailMode && hasDetailMap) {
+                                    performTransition(() => { window.location.search = `?region=${regionId}`; });
+                                } else {
+                                    if (localStorage.getItem('isLoggedIn') === 'true') {
+                                        performTransition(() => { window.location.href = targetUrl; });
+                                    } else {
+                                        if (window.openAuthModal) {
+                                            window.openAuthModal('promo', data.name, data.count, () => {
+                                                performTransition(() => { window.location.href = targetUrl; });
+                                            });
+                                        } else {
+                                            performTransition(() => { window.location.href = targetUrl; });
+                                        }
+                                    }
+                                }
+                            };
+                        });
+                    }
+
+                    // 2. 데스크탑: 기존 로직
+                    if (!isMobile) {
+                        // 툴팁 이벤트
+                        element.addEventListener('mouseenter', function () {
+                            if (this.tagName.toLowerCase() === 'path' || this.tagName.toLowerCase() === 'g') this.parentNode.appendChild(this);
+                            const data = currentConfig.db[regionId] || { name: 'Unknown', count: 0 };
+                            // 호버 시 살아있는 효과 잠시 중단 (깔끔한 호버를 위해)
+                            this.style.animation = 'none';
+
+                            tTitle.innerText = data.name;
+                            // [NEW] 툴팁 내용 상세화 (전국 + 지역)
+                            const nationalNum = data.national || 0;
+                            const localNum = data.local || 0;
+                            tCountSpan.innerHTML = `
+                             <span style="font-size:1.2em;">${data.count.toLocaleString()}</span>
+                             <div style="font-size:0.75em; color:#9CA3AF; margin-top:4px; font-weight:500;">
+                                 전국 ${nationalNum.toLocaleString()} + 지역 ${localNum.toLocaleString()}
+                             </div>
+                        `;
+                            tooltip.style.display = 'flex';
+                            const rect = element.getBoundingClientRect();
+                            const isLeft = (!isDetailMode) ? (currentConfig.leftSideIds || []).includes(regionId) : (rect.left + rect.width / 2) < (window.innerWidth / 2);
+                            // [NEW] 하단 클리핑 방지 로직
+                            // 화면 하단 일정 영역(설정값 참조)에 있는 요소라면, 툴팁을 요소의 위쪽으로 띄웁니다.
+                            const isBottom = (rect.top + rect.height) > (window.innerHeight * TOOLTIP_CONFIG.BOTTOM_THRESHOLD);
+
+                            const tLine = tooltip.querySelector('.tooltip-line'); const tContent = tooltip.querySelector('.tooltip-content');
+
+                            // Y축 위치 계산 (기본: Top 정렬 / 하단요소: Bottom 정렬)
+                            let topPos, bottomPos;
+                            if (isBottom) {
+                                // 요소 위로 띄우기
+                                tooltip.style.top = 'auto';
+                                tooltip.style.bottom = `${window.innerHeight - rect.top + TOOLTIP_CONFIG.BOTTOM_ELEVATION_Y}px`;
+                                // [UX] 위로 뜰 때는 연결 선(Line)을 툴팁 박스 하단에 맞춰서 요소와 가깝게 배치
+                                tooltip.style.alignItems = 'flex-end';
                             } else {
-                                performTransition(() => { window.location.href = targetUrl; });
+                                // 기본: 요소 상단 N% 지점에 맞춤
+                                tooltip.style.bottom = 'auto';
+                                tooltip.style.top = `${rect.top + rect.height * TOOLTIP_CONFIG.OFFSET_TOP_FACTOR}px`;
+                                // 기본 정렬: 중앙
+                                tooltip.style.alignItems = 'center';
                             }
-                        }
-                    });
+
+                            if (isLeft) {
+                                tooltip.style.flexDirection = 'row-reverse';
+                                tLine.style.marginRight = '0px'; tLine.style.marginLeft = `${TOOLTIP_CONFIG.LINE_MARGIN_X}px`; tLine.style.transformOrigin = 'right center';
+                                tContent.style.alignItems = 'flex-end';
+                                tooltip.style.left = 'auto';
+                                tooltip.style.right = `${window.innerWidth - (rect.left + rect.width * 0.2)}px`;
+                                // Y축은 위에서 계산한 top/bottom 사용 (topPos 변수 대신 직접 style 지정했으므로 생략)
+                            } else {
+                                tooltip.style.flexDirection = 'row';
+                                tLine.style.marginRight = `${TOOLTIP_CONFIG.LINE_MARGIN_X}px`; tLine.style.marginLeft = '0px'; tLine.style.transformOrigin = 'left center';
+                                tContent.style.alignItems = 'flex-start';
+                                tooltip.style.right = 'auto';
+                                tooltip.style.left = `${rect.right - rect.width * 0.2}px`;
+                            }
+                            if (tooltipTimeline) tooltipTimeline.kill();
+                            tooltipTimeline = gsap.timeline();
+                            // [Config] 위치에 따라 선 길이 다르게 적용
+                            const targetLineLength = isBottom ? TOOLTIP_CONFIG.LINE_LENGTH_BOTTOM : TOOLTIP_CONFIG.LINE_LENGTH_DEFAULT;
+
+                            tooltipTimeline.set(tLine, { width: 0 }).set(tContent, { opacity: 0, y: 10 }).to(tLine, { width: targetLineLength, duration: 0.4, ease: "power2.out" }).to(tContent, { opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.7)" }, "-=0.2");
+                        });
+
+                        element.addEventListener('mouseleave', function () {
+                            // 애니메이션 복구 (클래스 재적용 필요 시)
+                            this.style.animation = '';
+                            if (tooltipTimeline) tooltipTimeline.kill(); tooltip.style.display = 'none';
+                        });
+
+                        // 클릭 이벤트
+                        element.addEventListener('click', (e) => {
+                            e.stopPropagation(); tooltip.style.display = 'none';
+                            const data = currentConfig.db[regionId];
+                            const hasDetailMap = REGION_DATA.hasOwnProperty(regionId);
+                            const targetUrl = `main.html?region=${regionId}&anim=1`;
+
+                            if (!isDetailMode && hasDetailMap) {
+                                performTransition(() => { window.location.search = `?region=${regionId}`; });
+                                return;
+                            }
+                            console.log("현재 로그인 상태:", isLoggedIn); // <--- 이 줄을 추가!
+                            if (localStorage.getItem('isLoggedIn') === 'true') {
+                                performTransition(() => { window.location.href = targetUrl; });
+                            } else {
+                                if (window.openAuthModal) {
+                                    window.openAuthModal('promo', data.name, data.count, () => {
+                                        performTransition(() => { window.location.href = targetUrl; });
+                                    });
+                                } else {
+                                    performTransition(() => { window.location.href = targetUrl; });
+                                }
+                            }
+                        });
+                    }
                 } else { element.classList.add('region-disabled'); }
             });
+
+            // [NEW] 랜덤으로 3개 정도의 지역에 호흡 효과 부여
+            if (activeElements.length > 0) {
+                // 섞기
+                const shuffled = activeElements.sort(() => 0.5 - Math.random());
+                // 상위 3개 혹은 전체의 30%
+                const selected = shuffled.slice(0, Math.max(2, Math.floor(activeElements.length * 0.3)));
+                selected.forEach(el => el.classList.add('region-alive'));
+            }
 
             function performTransition(callback) {
                 gsap.timeline().to("#svg-container", { scale: 5, opacity: 0, duration: 0.8, ease: "power4.in" }).to(overlay, { opacity: 1, duration: 0.5 }, "<0.3").to({}, { onComplete: callback });
             }
+
+            // [MOBILE UX] 바텀 시트 닫기 이벤트 (전역)
+            const closeBottomSheet = () => {
+                const sheet = document.getElementById('mobile-bottom-sheet');
+                const mapContainer = document.getElementById('svg-container');
+                const introHeader = document.getElementById('intro-header'); // [NEW]
+
+                if (sheet) sheet.classList.remove('active');
+                if (mapContainer) mapContainer.classList.remove('map-shifted');
+                if (introHeader) introHeader.classList.remove('header-hidden'); // [NEW]
+            };
+
+            const btnSheetClose = document.getElementById('btn-sheet-close');
+            if (btnSheetClose) btnSheetClose.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeBottomSheet();
+            });
+
+            // 지도 배경 클릭 시 닫기
+            svgElement.addEventListener('click', (e) => {
+                // 퍼즐 조각(stopPropagation됨)이 아닌 배경 클릭 시
+                closeBottomSheet();
+            });
         }
+
 
         // [2] DB 매핑 정보 (API 연결용)
         const DB_MAPPING = {
@@ -355,19 +619,32 @@
         };
 
         // [3] API 데이터 업데이트 함수
+        // [3] API 데이터 업데이트 함수
         async function updateMapData() {
             try {
                 const response = await fetch('/api/landing/stats');
                 const dbCounts = await response.json();
 
+                // [NEW] 전국 데이터 추출 (없으면 0)
+                const nationalCount = Number(dbCounts['전국'] || 0);
+
                 for (const [koreanName, count] of Object.entries(dbCounts)) {
                     const mapInfo = DB_MAPPING[koreanName];
                     if (mapInfo) {
+                        // [NEW] 해당 지역 수량 + 전국 수량 합산
+                        const totalCount = Number(count) + nationalCount;
+
                         if (REGION_DATA[mapInfo.group] && REGION_DATA[mapInfo.group].db[mapInfo.key]) {
-                            REGION_DATA[mapInfo.group].db[mapInfo.key].count = count;
+                            const target = REGION_DATA[mapInfo.group].db[mapInfo.key];
+                            target.count = totalCount;
+                            target.local = Number(count);       // 지역 전용
+                            target.national = nationalCount;    // 전국 공통
                         }
                         if (mapInfo.group === 'national' && REGION_DATA['national'].db[mapInfo.key]) {
-                            REGION_DATA['national'].db[mapInfo.key].count = count;
+                            const target = REGION_DATA['national'].db[mapInfo.key];
+                            target.count = totalCount;
+                            target.local = Number(count);
+                            target.national = nationalCount;
                         }
                     }
                 }
@@ -382,10 +659,39 @@
             const groups = ['metropolitan', 'chungnam', 'jeonnam', 'gyeongbug', 'gyeongnam'];
             groups.forEach(groupName => {
                 const groupDB = REGION_DATA[groupName].db;
-                let total = 0;
-                Object.values(groupDB).forEach(item => total += (item.count || 0));
+                let totalLocal = 0;
+                let nationalVal = 0;
+
+                Object.values(groupDB).forEach(item => {
+                    totalLocal += (item.local || 0);
+                    // 하나라도 national 값이 있으면 가져옴 (어차피 동일)
+                    if (item.national) nationalVal = item.national;
+                });
+
                 if (REGION_DATA['national'].db[groupName]) {
-                    REGION_DATA['national'].db[groupName].count = total;
+                    const target = REGION_DATA['national'].db[groupName];
+                    const numChildren = Object.keys(groupDB).length;
+
+                    // 그룹의 Total Count = (지역 합계) + (전국 * 자식 지역 수) 가 아니라!
+                    // 화면에 보여줄 땐 "이 그룹에 속한 지역들의 총 혜택 수"이므로
+                    // 단순히 지역 합계 + 전국 1회? 아니면 각 지역 혜택의 합?
+                    // "서울(688) + 경기(500) + ..." -> 수도권 클릭 시 이들을 다 보여줌.
+                    // 따라서 기존 로직대로 각 지역 Total의 합을 유지하되,
+                    // 툴팁 표기용 local/national을 분리 저장
+
+                    target.local = totalLocal;
+
+                    // 🚨 주의: '전국' 수량은 여기서 합산하지 않고 단일 값으로 보여줄지,
+                    // 아니면 각 지역별 중복을 포함할지 결정해야 함.
+                    // 현재 UI상 "서울 688"은 "서울지역 + 전국"임.
+                    // 수도권 전체 혜택 수는 (서울+전국) + (경기+전국) ... 으로 계산되어 있음 (기존 total 로직).
+                    // 따라서 breakdown도 이에 맞춰야 함.
+                    // National part of group = National * numChildren
+
+                    target.national = nationalVal * numChildren;
+
+                    // 만약 total을 다시 계산하고 싶다면:
+                    target.count = target.local + target.national;
                 }
             });
         }
@@ -403,10 +709,43 @@
             const backNav = document.getElementById('back-nav');
             const headerTitle = document.getElementById('header-title');
             const headerDesc = document.getElementById('header-desc');
+            const userStatus = document.getElementById('user-status'); // [NEW]
+            const userNameDisplay = document.getElementById('user-name-display'); // [NEW]
 
-            headerTitle.innerText = `Sseuk-Sseuk : ${currentConfig.title}`;
+            if (currentRegionKey === 'national') {
+                headerTitle.innerHTML = `쓱-쓱 훑어 보는<br>청년 정책 소식`;
+            } else {
+                headerTitle.innerText = `Sseuk-Sseuk : ${currentConfig.title}`;
+            }
             headerDesc.innerText = currentConfig.desc;
             const hasVisited = sessionStorage.getItem('sseuk_intro_visited');
+
+            // [NEW] 로그인 상태 확인 및 표시
+            const savedUserName = localStorage.getItem('userName');
+            if (isLoggedIn && savedUserName) {
+                if (userStatus && userNameDisplay) {
+                    userNameDisplay.innerText = savedUserName;
+                    userStatus.classList.remove('hidden');
+
+                    // [Inline] 로그아웃 로직 연결
+                    const logoutBtn = document.getElementById('btn-landing-logout');
+                    if (logoutBtn) {
+                        logoutBtn.addEventListener('click', (e) => {
+                            e.stopPropagation(); // 버블링 방지
+                            if (confirm('로그아웃 하시겠습니까?')) {
+                                localStorage.removeItem('isLoggedIn');
+                                localStorage.removeItem('userName');
+                                localStorage.removeItem('userEmail');
+                                alert('로그아웃 되었습니다.');
+                                window.location.reload();
+                            }
+                        });
+                    }
+                }
+                // 로그인 상태면 intro gate에서도 로그인 버튼 숨기기 (선택사항)
+                const introLoginBtn = document.getElementById('btn-intro-login');
+                if (introLoginBtn) introLoginBtn.style.display = 'none';
+            }
 
             if (isDetailMode || hasVisited || isLoggedIn) {
                 introGate.classList.add('hidden');
@@ -438,6 +777,28 @@
                 });
         });
     </script>
+    <!-- [MOBILE UX START] 바텀 시트 HTML -->
+    <div id="mobile-bottom-sheet">
+        <div class="flex justify-between items-start">
+            <h2 id="sheet-title" class="text-2xl font-extrabold text-gray-900">지역명</h2>
+            <button id="btn-sheet-close" class="p-2 -mr-2 text-gray-400 hover:text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="flex flex-col gap-1">
+            <span id="sheet-count" class="text-4xl font-bold text-[#4A9EA8]">0</span>
+            <span id="sheet-desc" class="text-sm text-gray-500 font-medium">전국 0 + 지역 0</span>
+        </div>
+        <button id="btn-sheet-action"
+            class="w-full py-4 bg-[#4A9EA8] hover:bg-[#3b858e] text-white font-bold rounded-xl text-lg mt-2 transition-colors">
+            이 지역 자세히 보기
+        </button>
+    </div>
+    <!-- [MOBILE UX END] -->
+
 </body>
 
 </html>

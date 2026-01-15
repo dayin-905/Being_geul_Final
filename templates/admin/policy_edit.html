@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Policy - Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard+Variable:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard Variable', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .admin-bar {
+            background: linear-gradient(90deg, #FF5A5F 0%, #B91C1C 100%);
+            color: white;
+            font-weight: 800;
+        }
+
+        .btn-brand {
+            background-color: #4A9EA8;
+            color: white;
+        }
+
+        .btn-brand:hover {
+            background-color: #3b858e;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+
+    <div class="admin-bar w-full py-2 text-center shadow-md">
+        ⚠️ ADMIN MODE ACTIVE ⚠️
+    </div>
+
+    <div class="max-w-4xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        <div class="mb-6 flex items-center justify-between">
+            <h1 class="text-3xl font-bold text-gray-900">정책 수정 (Edit Policy)</h1>
+            <a href="/admin/policies" class="text-gray-600 hover:text-gray-900 font-medium">← Back to List</a>
+        </div>
+
+        <div class="bg-white shadow-md rounded-lg overflow-hidden p-6 border-t-4 border-[#4A9EA8]">
+            <form action="/admin/policies/{{ policy.id }}/update" method="POST" class="space-y-6">
+
+                <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                    <!-- ID (Read-only) -->
+                    <div class="sm:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700">ID</label>
+                        <input type="text" disabled value="{{ policy.id }}"
+                            class="mt-1 block w-full bg-gray-100 border-gray-300 rounded-md shadow-sm sm:text-sm text-gray-500 px-3 py-2">
+                    </div>
+
+                    <!-- Title -->
+                    <div class="sm:col-span-5">
+                        <label for="title" class="block text-sm font-medium text-gray-700">Policy Title</label>
+                        <input type="text" name="title" id="title" required value="{{ policy.title }}"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#4A9EA8] focus:border-[#4A9EA8] sm:text-sm">
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="sm:col-span-6">
+                        <label for="summary" class="block text-sm font-medium text-gray-700">Summary</label>
+                        <textarea name="summary" id="summary" rows="3"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#4A9EA8] focus:border-[#4A9EA8] sm:text-sm">{{ policy.summary or '' }}</textarea>
+                    </div>
+
+                    <!-- Period -->
+                    <div class="sm:col-span-2">
+                        <label for="period" class="block text-sm font-medium text-gray-700">Period (Text)</label>
+                        <input type="text" name="period" id="period" value="{{ policy.period or '' }}"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#4A9EA8] focus:border-[#4A9EA8] sm:text-sm">
+                    </div>
+
+                    <!-- Link -->
+                    <div class="sm:col-span-4">
+                        <label for="link" class="block text-sm font-medium text-gray-700">Detail URL</label>
+                        <input type="url" name="link" id="link" value="{{ policy.link or '' }}"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#4A9EA8] focus:border-[#4A9EA8] sm:text-sm">
+                    </div>
+
+                    <!-- Genre -->
+                    <div class="sm:col-span-3">
+                        <label for="genre" class="block text-sm font-medium text-gray-700">Genre</label>
+                        <select name="genre" id="genre"
+                            class="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#4A9EA8] focus:border-[#4A9EA8] sm:text-sm">
+                            <option value="">None</option>
+                            {% for g in all_genres %}
+                            <option value="{{ g }}" {% if policy.genre==g %}selected{% endif %}>{{ g }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Region -->
+                    <div class="sm:col-span-3">
+                        <label for="region" class="block text-sm font-medium text-gray-700">Region</label>
+                        <select name="region" id="region"
+                            class="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-[#4A9EA8] focus:border-[#4A9EA8] sm:text-sm">
+                            <option value="">전국</option>
+                            {% for r in all_regions %}
+                            <option value="{{ r }}" {% if policy.region==r %}selected{% endif %}>{{ r }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="pt-5 flex justify-end gap-3">
+                    <a href="/admin/policies"
+                        class="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                        class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#4A9EA8] hover:bg-[#3b858e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4A9EA8]">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+
+</html>

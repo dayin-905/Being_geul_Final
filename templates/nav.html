@@ -1,60 +1,293 @@
-<nav class="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/70 backdrop-blur-md transition-all duration-300">
+<nav
+    class="sticky top-0 z-[10000] w-full border-b border-gray-100 bg-white/70 backdrop-blur-md transition-all duration-300">
 
     <div class="relative mx-auto flex h-[80px] max-w-[1200px] items-center justify-between px-5">
 
-        <a href="/main.html" class="z-10 flex items-center transition-opacity hover:opacity-80">
-            <img src="/static/images/team_logo.webp"
-                onerror="this.src='https://placehold.co/100x40/transparent/333?text=LOGO'" alt="Logo"
-                class="h-12 w-auto md:h-16">
-        </a>
+        <div class="relative z-10 flex items-center transition-opacity">
+            <a href="/main.html">
+                <img src="/static/images/team_logo.webp"
+                    onerror="this.src='https://placehold.co/100x40/transparent/333?text=LOGO'" alt="Logo"
+                    class="h-12 w-auto md:h-16">
+            </a>
+
+            <!-- [NEW] Notification Bubble -->
+            <!-- Position Adjustment: Edit top/left/margin-left in the style attribute below -->
+            <!-- [REAL] Notification Bubble & Dropdown -->
+            <div id="noti-bubble"
+                class="absolute cursor-pointer transition-all duration-300 transform hover:scale-105 hidden"
+                style="top: -5px; right: 60%; margin-left: 5px; z-index: 50; animation: float 3s ease-in-out infinite;">
+                <!-- Reverted Design: Teal Dot with "..." -->
+                <div id="noti-dot"
+                    class="flex items-center justify-center w-8 h-8 rounded-full bg-primary-teal text-white shadow-lg border-2 border-white">
+                    <!-- If unread, show new count badge -->
+                    <span id="noti-badge"
+                        class="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white hidden">N</span>
+                    <span class="text-xl font-bold pb-2 leading-none">...</span>
+                </div>
+
+                <!-- Dropdown List (Hidden by default) -->
+                <div id="noti-menu"
+                    class="hidden absolute top-8 left-0 w-[450px] bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-[60] origin-top-left flex-col">
+                    <div class="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                        <span class="text-xs font-bold text-gray-600">💌 <span id="noti-header-name"
+                                class="text-primary-orange"></span>님에게 도착한
+                            알림</span>
+                        <button onclick="closeNoti(event)"
+                            class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+                    </div>
+                    <ul id="noti-list" class="flex flex-col max-h-[300px] overflow-y-auto">
+                        <!-- JS injected items -->
+                    </ul>
+                </div>
+            </div>
+
+            <script>
+                // [Real Logic] Fetch Notifications from API
+                async function initNotifications() {
+                    const userEmail = localStorage.getItem('userEmail');
+                    const userName = localStorage.getItem('userName') || '청년';
+
+                    if (!userEmail) return; // 로그인 안했으면 패스
+
+                    // [Personalization] Set Header Name
+                    const headerNameSpan = document.getElementById('noti-header-name');
+                    if (headerNameSpan) headerNameSpan.innerText = userName;
+
+                    try {
+                        const res = await fetch(`/api/recommend/status?user_email=${encodeURIComponent(userEmail)}`);
+                        if (!res.ok) return;
+
+                        let alerts = await res.json();
+
+                        // [Persistence Logic]
+                        // 1. 삭제된 알림 필터링 (Blacklist)
+                        const deletedIds = JSON.parse(localStorage.getItem('deletedAlertIds') || '[]');
+                        const getAlertId = (item) => `${item.type}-${item.link}`;
+
+                        alerts = alerts.filter(item => !deletedIds.includes(getAlertId(item)));
+
+                        // [Max limit rule] 최대 7개까지만 표시 (User Request)
+                        if (alerts.length > 7) alerts = alerts.slice(0, 7);
+
+                        const bubble = document.getElementById('noti-bubble');
+                        const badge = document.getElementById('noti-badge');
+                        const list = document.getElementById('noti-list');
+
+                        // [Read Status Logic]
+                        let readIds = JSON.parse(localStorage.getItem('readAlertIds') || '[]');
+
+                        // 현재 알림 중 읽지 않은 것 카운트
+                        const unreadCount = alerts.filter(item => !readIds.includes(getAlertId(item))).length;
+
+                        if (alerts.length > 0) {
+                            // 1. Show Bubble
+                            bubble.classList.remove('hidden');
+
+                            if (unreadCount > 0) {
+                                if (badge) {
+                                    badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
+                                    badge.classList.remove('hidden');
+                                }
+                            } else {
+                                if (badge) badge.classList.add('hidden');
+                            }
+
+                            // 2. Render List
+                            list.innerHTML = alerts.map(item => {
+                                const id = getAlertId(item);
+                                const isRead = readIds.includes(id);
+                                const bgClass = isRead ? 'bg-gray-50' : 'bg-white hover:bg-gray-50';
+                                const textClass = isRead ? 'text-gray-400' : 'text-gray-800';
+                                const iconOpacity = isRead ? 'opacity-50' : 'opacity-100';
+
+                                return `
+                                <li class="group/item relative border-b border-gray-50 last:border-0 transition-colors cursor-pointer ${bgClass}" 
+                                    onclick="markAsRead('${id}'); location.href='${item.link}'">
+                                    <div class="p-3 pr-8 flex gap-3 items-start">
+                                        <!-- Icon Avatar (User Liked This) -->
+                                        <div class="shrink-0 w-9 h-9 rounded-full bg-white border border-gray-100 flex items-center justify-center text-lg shadow-sm ${iconOpacity}">
+                                            ${item.icon}
+                                        </div>
+                                        
+                                        <!-- Content (Reverted to compact style) -->
+                                        <div class="flex-1 min-w-0 pt-0.5">
+                                            <div class="flex items-center gap-2 mb-0.5">
+                                                <span class="text-xs font-bold truncate ${textClass}">${item.title}</span>
+                                                ${item.type === 'deadline' && !isRead ? '<span class="text-[10px] bg-red-100 text-red-600 px-1.5 rounded-sm font-bold">마감임박</span>' : ''}
+                                            </div>
+                                            <p class="text-xs ${isRead ? 'text-gray-400' : 'text-gray-500'} leading-snug break-keep">
+                                                ${item.message}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Delete Button -->
+                                    <button onclick="deleteAlert('${id}', event)"
+                                        class="absolute top-2 right-2 p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all opacity-0 group-hover/item:opacity-100"
+                                        title="삭제하기">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </li>
+                            `}).join('');
+
+                        } else {
+                            bubble.classList.add('hidden');
+                        }
+                    } catch (e) {
+                        console.error("알림 로드 실패:", e);
+                    }
+                }
+
+                // Helper: Mark specific item as read
+                window.markAsRead = function (id) {
+                    let readIds = JSON.parse(localStorage.getItem('readAlertIds') || '[]');
+                    if (!readIds.includes(id)) {
+                        readIds.push(id);
+                        if (readIds.length > 50) readIds.shift();
+                        localStorage.setItem('readAlertIds', JSON.stringify(readIds));
+                    }
+                };
+
+                // Helper: Delete item (Permanent Removal)
+                window.deleteAlert = function (id, event) {
+                    event.stopPropagation();
+                    if (!confirm('이 알림을 삭제하시겠습니까?')) return;
+
+                    let deletedIds = JSON.parse(localStorage.getItem('deletedAlertIds') || '[]');
+                    if (!deletedIds.includes(id)) {
+                        deletedIds.push(id);
+                        localStorage.setItem('deletedAlertIds', JSON.stringify(deletedIds));
+                    }
+
+                    initNotifications();
+                };
+
+                // Bubble Click Handler
+                const bubble = document.getElementById('noti-bubble');
+                const menu = document.getElementById('noti-menu');
+
+                if (bubble) {
+                    bubble.addEventListener('click', (e) => {
+                        if (e.target.closest('#noti-menu') && !e.target.closest('li')) return;
+
+                        e.stopPropagation();
+                        menu.classList.toggle('hidden');
+                        menu.classList.toggle('flex');
+                    });
+                }
+
+                function closeNoti(e) {
+                    if (e) e.stopPropagation();
+                    const m = document.getElementById('noti-menu');
+                    if (m) {
+                        m.classList.add('hidden');
+                        m.classList.remove('flex');
+                    }
+                }
+
+                // Outside click
+                document.addEventListener('click', (e) => {
+                    const b = document.getElementById('noti-bubble');
+                    const m = document.getElementById('noti-menu');
+                    if (b && !b.contains(e.target)) {
+                        if (m) {
+                            m.classList.add('hidden');
+                            m.classList.remove('flex');
+                        }
+                    }
+                });
+
+                // Start
+                document.addEventListener('DOMContentLoaded', initNotifications);
+            </script>
+
+
+
+            <style>
+                @keyframes float {
+                    0% {
+                        transform: translateY(0px);
+                    }
+
+                    50% {
+                        transform: translateY(-5px);
+                    }
+
+                    100% {
+                        transform: translateY(0px);
+                    }
+                }
+            </style>
+        </div>
 
         <span
             class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg font-bold text-gray-800 md:hidden whitespace-nowrap pointer-events-none">
             쓱쓱 청년 정책
         </span>
 
-        <ul id="pc-nav-list" class="hidden md:flex gap-3">
+        <ul id="pc-nav-list" class="hidden md:flex gap-3 items-center">
+            <!-- 1. Home -->
             <li>
                 <a href="/main.html"
                     class="flex items-center justify-center rounded-full px-4 py-2 text-[15px] font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all">
                     Home
                 </a>
             </li>
-            <li>
-                <a href="/all.html"
-                    class="flex items-center justify-center rounded-full px-4 py-2 text-[15px] font-bold text-white bg-primary-teal shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-[#3d8b94] transition-all">
-                    All Policies
-                </a>
-            </li>
-            <li>
-                <a href="/about.html"
-                    class="flex items-center justify-center rounded-full px-4 py-2 text-[15px] font-bold text-white bg-primary-beige shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-[#c49f5b] transition-all">
-                    About
-                </a>
-            </li>
 
-            {% if user %}
-            <li>
-                <a href="/mypage.html"
-                    class="flex items-center justify-center rounded-full px-4 py-2 text-[15px] font-bold text-white bg-primary-orange shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-[#e06d2e] transition-all">
-                    My Page
-                </a>
-            </li>
-            <li>
-                <button onclick="handleLogout()"
-                    class="flex items-center justify-center rounded-full px-4 py-2 text-[15px] font-bold text-gray-500 border border-gray-300 hover:bg-gray-50 transition-all cursor-pointer">
-                    Logout
-                </button>
-            </li>
-            {% else %}
-            <li>
+            <!-- 2. My Page / Login (Dropdown) -->
+            <!-- 2. LOGIN STATE (Client-side Toggle) -->
+            <!-- Guest Mode -->
+            <li id="pc-nav-guest" class="hidden">
                 <button type="button"
                     class="js-login-trigger flex items-center justify-center rounded-full px-4 py-2 text-[15px] font-bold text-white bg-primary-orange shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-[#e06d2e] transition-all cursor-pointer"
                     data-mode="login">
                     Login
                 </button>
             </li>
-            {% endif %}
+
+            <!-- User Mode (Hidden by default) -->
+            <li id="pc-nav-user" class="relative group hidden">
+                <button
+                    class="flex items-center justify-center gap-1 rounded-full px-4 py-2 text-[15px] font-bold text-white bg-primary-orange shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-[#e06d2e] transition-all">
+                    <span>My Page</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div
+                    class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-32 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top">
+                    <a href="/mypage.html"
+                        class="block px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 text-center">
+                        마이페이지
+                    </a>
+                    <div class="border-t border-gray-100"></div>
+                    <button onclick="handleLogout()"
+                        class="block w-full px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 text-center">
+                        로그아웃
+                    </button>
+                </div>
+            </li>
+
+            <!-- 3. All Policies -->
+            <li>
+                <a href="/all.html"
+                    class="flex items-center justify-center rounded-full px-4 py-2 text-[15px] font-bold text-white bg-primary-teal shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-[#3d8b94] transition-all">
+                    All Policies
+                </a>
+            </li>
+
+            <!-- 4. About -->
+            <li>
+                <a href="/about.html"
+                    class="flex items-center justify-center rounded-full px-4 py-2 text-[15px] font-bold text-white bg-primary-beige shadow-md hover:-translate-y-0.5 hover:shadow-lg hover:bg-[#c49f5b] transition-all">
+                    About
+                </a>
+            </li>
         </ul>
 
         <button id="hamburger-btn" class="z-10 md:hidden p-2 text-gray-600 focus:outline-none">
@@ -81,36 +314,64 @@
         </div>
 
         <div id="mobile-profile-section" class="p-6 bg-gray-50">
-            {% if user %}
-            <p class="text-gray-600 mb-2">반가워요 👋</p>
-            <p class="text-xl font-bold text-gray-800 mb-4">{{ user.username or "청년" }}님</p>
-            <a href="/mypage.html"
-                class="block w-full text-center rounded-xl bg-primary-orange py-3 text-white font-bold shadow-md transition-transform active:scale-95">My
-                Page</a>
-            {% else %}
-            <p class="text-gray-600 mb-2">청년 정책이 궁금하다면?</p>
-            <button type="button"
-                class="js-login-trigger block w-full text-center rounded-xl bg-primary-orange py-3 text-white font-bold shadow-md transition-transform active:scale-95 cursor-pointer"
-                data-mode="login">
-                로그인 / 회원가입
-            </button>
-            {% endif %}
+            <!-- User Mode (Hidden by default) -->
+            <div id="mobile-profile-user" class="hidden">
+                <p class="text-gray-600 mb-2">반가워요 👋</p>
+                <p class="text-xl font-bold text-gray-800 mb-4"><span id="mobile-username">청년</span>님</p>
+                <button onclick="handleLogout()"
+                    class="block w-full text-center rounded-xl bg-primary-orange py-3 text-white font-bold shadow-md transition-transform active:scale-95">
+                    로그아웃
+                </button>
+            </div>
+
+            <!-- Guest Mode -->
+            <div id="mobile-profile-guest" class="hidden">
+                <p class="text-gray-600 mb-2">청년 정책이 궁금하다면?</p>
+                <button type="button"
+                    class="js-login-trigger block w-full text-center rounded-xl bg-primary-orange py-3 text-white font-bold shadow-md transition-transform active:scale-95 cursor-pointer"
+                    data-mode="login">
+                    로그인 / 회원가입
+                </button>
+            </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-5">
             <ul class="flex flex-col gap-3">
+                <!-- 1. Home -->
                 <li>
                     <a href="/main.html"
                         class="flex w-full items-center justify-center rounded-full bg-gray-100 py-3 text-[15px] font-bold text-gray-600 transition-all hover:bg-gray-200 active:scale-95">
                         Home
                     </a>
                 </li>
+
+                <!-- 2. My Page / Login -->
+                <!-- 2. My Page (User only - hidden by default) -->
+                <li id="mobile-menu-mypage" class="hidden">
+                    <a href="/mypage.html"
+                        class="flex w-full items-center justify-center rounded-full bg-primary-orange py-3 text-[15px] font-bold text-white shadow-md transition-all hover:bg-[#e06d2e] active:scale-95">
+                        My Page
+                    </a>
+                </li>
+
+                <!-- 2b. Login (Guest only - visible by default, toggled via JS) -->
+                <li id="mobile-menu-login" class="hidden">
+                    <button type="button"
+                        class="js-login-trigger flex w-full items-center justify-center rounded-full bg-primary-orange py-3 text-[15px] font-bold text-white shadow-md transition-all hover:bg-[#e06d2e] active:scale-95"
+                        data-mode="login">
+                        Login
+                    </button>
+                </li>
+
+                <!-- 3. All Policies -->
                 <li>
                     <a href="/all.html"
                         class="flex w-full items-center justify-center rounded-full bg-primary-teal py-3 text-[15px] font-bold text-white shadow-md transition-all hover:bg-[#3d8b94] active:scale-95">
                         All Policies
                     </a>
                 </li>
+
+                <!-- 4. About -->
                 <li>
                     <a href="/about.html"
                         class="flex w-full items-center justify-center rounded-full bg-primary-beige py-3 text-[15px] font-bold text-white shadow-md transition-all hover:bg-[#c49f5b] active:scale-95">
@@ -120,7 +381,7 @@
             </ul>
         </div>
 
-        <div id="mobile-logout-area" class="p-5 border-t border-gray-100 {% if not user %}hidden{% endif %}">
+        <div id="mobile-logout-area" class="p-5 border-t border-gray-100 hidden">
             <button onclick="handleLogout()"
                 class="w-full flex items-center justify-center gap-2 text-gray-500 hover:text-gray-800 transition-colors">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -137,3 +398,123 @@
 {% with btn_class="bg-primary-orange hover:bg-[#e06d2e]" %}
 {% include "components/auth_modal.html" %}
 {% endwith %}
+
+<script>
+    // [Client-side Auth Check]
+    document.addEventListener('DOMContentLoaded', () => {
+        // 1. Social Login Parameter Check (Restore Logic)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('social_login') === 'success') {
+            const email = urlParams.get('email');
+            const name = urlParams.get('name'); // Encoded or plain
+
+            if (email) {
+                // Decode name if needed (browsers decode URL params automatically but decodeURIComponent ensures it)
+                const decodedName = decodeURIComponent(name || 'Member');
+
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userEmail', email);
+                localStorage.setItem('userName', decodedName);
+
+                // Clean URL (Remove params)
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        }
+
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const userName = localStorage.getItem('userName') || '사용자';
+
+        // PC IDs
+        const pcNavGuest = document.getElementById('pc-nav-guest');
+        const pcNavUser = document.getElementById('pc-nav-user');
+
+        // Mobile IDs
+        const mobileGuest = document.getElementById('mobile-profile-guest');
+        const mobileUser = document.getElementById('mobile-profile-user');
+        const mobileUserNameSpan = document.getElementById('mobile-username');
+        const mobileMenuMypage = document.getElementById('mobile-menu-mypage');
+        const mobileMenuLogin = document.getElementById('mobile-menu-login');
+        const mobileLogoutArea = document.getElementById('mobile-logout-area');
+
+        if (isLoggedIn) {
+            // Show User States
+            if (pcNavGuest) pcNavGuest.classList.add('hidden');
+            if (pcNavUser) pcNavUser.classList.remove('hidden');
+
+            if (mobileGuest) mobileGuest.classList.add('hidden');
+            if (mobileUser) mobileUser.classList.remove('hidden');
+            if (mobileUserNameSpan) mobileUserNameSpan.innerText = userName;
+
+            if (mobileMenuMypage) mobileMenuMypage.classList.remove('hidden');
+            if (mobileMenuLogin) mobileMenuLogin.classList.add('hidden');
+
+            if (mobileLogoutArea) mobileLogoutArea.classList.remove('hidden');
+        } else {
+            // Show Guest States
+            if (pcNavGuest) pcNavGuest.classList.remove('hidden');
+            if (pcNavUser) pcNavUser.classList.add('hidden');
+
+            if (mobileGuest) mobileGuest.classList.remove('hidden');
+            if (mobileUser) mobileUser.classList.add('hidden');
+
+            if (mobileMenuMypage) mobileMenuMypage.classList.add('hidden');
+            if (mobileMenuLogin) mobileMenuLogin.classList.remove('hidden');
+
+            if (mobileLogoutArea) mobileLogoutArea.classList.add('hidden');
+        }
+    });
+
+    // Global Logout Function
+    window.handleLogout = function () {
+        if (confirm('로그아웃 하시겠습니까?')) {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('userId'); // If stored
+            alert('로그아웃 되었습니다.');
+            window.location.reload();
+        }
+    };
+
+    // [NEW] all.html에서 알림 클릭 시 모달 자동 오픈 (충돌 방지 로직)
+    // all.html 수정 없이 nav.html에서 처리함
+    document.addEventListener("DOMContentLoaded", async () => {
+        // 1. 현재 페이지가 all.html인지 확인 (또는 유사한 목록 페이지)
+        if (!window.location.pathname.includes('all.html')) return;
+
+        // 2. 파라미터 확인
+        const params = new URLSearchParams(window.location.search);
+        const policyId = params.get('policy_id');
+        const openModal = params.get('open_modal');
+
+        if (policyId && openModal === 'true') {
+            console.log(`🔔 알림 리다이렉트 감지: 정책 ID ${policyId}`);
+
+            // 3. API로 정책 데이터 가져오기 (routers/recommendation.py에 신설한 API)
+            try {
+                const res = await fetch(`/api/recommend/policy/${policyId}`);
+                if (!res.ok) throw new Error("정책 정보 로드 실패");
+
+                const policyData = await res.json();
+
+                // 4. 가상의 요소 만들어서 openCardModal 호출
+                // (policy_modal.js의 openCardModal 함수는 element.getAttribute('data-json')을 사용함)
+                const dummyEl = document.createElement('div');
+                dummyEl.setAttribute('data-json', JSON.stringify(policyData));
+
+                // 5. 모달 열기 (조금 딜레이 줘서 자연스럽게)
+                setTimeout(() => {
+                    if (window.openCardModal) {
+                        window.openCardModal(dummyEl);
+                        console.log("✨ 모달 자동 오픈 성공");
+                    } else {
+                        console.error("openCardModal 함수를 찾을 수 없습니다.");
+                    }
+                }, 500);
+
+            } catch (err) {
+                console.error("알림 자동 모달 실패:", err);
+            }
+        }
+    });
+</script>

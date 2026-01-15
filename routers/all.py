@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from database import SessionLocal
-from models import Policy
+from models import Policy, get_image_for_category
 
 # 라우터 생성
 router = APIRouter()
@@ -78,21 +78,7 @@ def normalize_region_name(input_str: str) -> str:
         
     return input_str
 
-def get_image_for_category(category: str) -> str:
-    """카테고리에 맞는 랜덤 이미지 URL 반환"""
-    cat_code = "welfare"
-    if "주거" in category:
-        cat_code = "housing"
-    elif "취업" in category or "일자리" in category:
-        cat_code = "job"
-    elif "금융" in category:
-        cat_code = "finance"
-    elif "창업" in category:
-        cat_code = "startup"
-    elif "교육" in category:
-        cat_code = "growth"
-    
-    return f"/static/images/card_images/{cat_code}_{random.randint(1, 5)}.webp"
+
 
 # ==================== [라우터 엔드포인트] ====================
 
@@ -148,23 +134,28 @@ async def api_get_cards(
         ))
         print(f"🔎 키워드 검색: '{keyword}'")
     
-    # 정렬 기능
+    # 정렬 기능 - [수정] 모든 정렬 기준에 '모집 중(is_active=True)' 우선 적용
     if sort == 'latest':
-        # 최신순: created_at 내림차순 (NULL은 마지막)
-        query = query.order_by(Policy.created_at.desc().nulls_last())
-        print(f"📅 정렬: 최신순 (created_at DESC)")
+        # 최신순: 모집중 우선 -> 생성일 내림차순
+        query = query.order_by(Policy.is_active.desc(), Policy.created_at.desc().nulls_last())
+        print(f"📅 정렬: 최신순 (Active First -> created_at DESC)")
     elif sort == 'popular':
-        # 인기순: view_count 내림차순 (NULL은 마지막)
-        query = query.order_by(Policy.view_count.desc().nulls_last())
-        print(f"🔥 정렬: 인기순 (view_count DESC)")
+        # 인기순: 모집중 우선 -> 조회수 내림차순
+        query = query.order_by(Policy.is_active.desc(), Policy.view_count.desc().nulls_last())
+        print(f"🔥 정렬: 인기순 (Active First -> view_count DESC)")
     elif sort == 'deadline':
-        # 마감순: end_date 오름차순 (NULL은 마지막)
-        query = query.order_by(Policy.end_date.asc().nulls_last())
-        print(f"⏰ 정렬: 마감순 (end_date ASC)")
+        # 마감순: 모집중 우선 -> 마감 임박순 (end_date 오름차순)
+        query = query.order_by(Policy.is_active.desc(), Policy.end_date.asc().nulls_last())
+        print(f"⏰ 정렬: 마감순 (Active First -> end_date ASC)")
+    elif sort == 'closed':
+        # [NEW] 마감 정책 탭: 마감된 정책(is_active=False)만 모아보기
+        # 마감된 정책만 필터링 후, 최신 마감일 순(최근에 끝난 것부터)으로 정렬
+        query = query.filter(Policy.is_active == False).order_by(Policy.end_date.desc().nulls_last())
+        print(f"🚫 정렬: 마감 정책 (is_active=False Only -> end_date DESC)")
     else:
-        # 기본 정렬: id 오름차순
-        query = query.order_by(Policy.id.asc())
-        print(f"📋 정렬: 기본 (id ASC)")
+        # 기본 정렬: 모집중 우선 -> ID 오름차순
+        query = query.order_by(Policy.is_active.desc(), Policy.id.asc())
+        print(f"📋 정렬: 기본 (Active First -> id ASC)")
     
     # 전체보기 페이지에서는 모든 데이터를 가져옴
     policies = query.all()
@@ -196,7 +187,8 @@ async def api_get_cards(
             "image": get_image_for_category(p.genre),  # 랜덤 이미지 할당
             "link": p.link or "#",
             "region": p.region or "전국",
-            "colorCode": categoryColorMap.get(p.genre or "", "#777777")
+            "colorCode": categoryColorMap.get(p.genre or "", "#777777"),
+            "is_active": p.is_active  # [NEW] 프론트엔드에서 마감 배지 표시 등에 사용
         })
     
     return result

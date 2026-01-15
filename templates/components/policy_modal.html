@@ -11,23 +11,28 @@
             <img id="modal-img" src="" alt="Policy Image" class="w-full h-full object-cover"
                 onerror="this.src='/static/images/card_images/job_1.webp'">
 
-            <span id="modal-category"
-                class="absolute top-5 left-5 bg-orange-100 text-primary-orange px-3 py-1 rounded-lg text-xs font-bold border border-orange-200">
-                카테고리
-            </span>
+            <div class="absolute top-5 left-5 flex items-center gap-1 z-10">
+                <span id="modal-category"
+                    class="bg-orange-100 text-primary-orange px-3 py-1 rounded-lg text-xs font-bold">
+                    카테고리
+                </span>
+                <span id="modal-region" class="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-xs font-bold">
+                    지역
+                </span>
+            </div>
         </div>
 
         <div class="modal-body p-8 flex flex-col">
 
             <h2 id="modal-title" class="text-2xl font-extrabold text-[#222] leading-tight mb-4">정책 제목</h2>
 
-            <div class="mb-6">
+            <div class="mb-2">
                 <p id="modal-desc" class="text-[#444] text-sm leading-relaxed whitespace-pre-line">
                     정책 상세 내용이 이곳에 들어갑니다.
                 </p>
             </div>
 
-            <div class="w-full border-b border-gray-100 mb-4"></div>
+            <!-- 구분선 제거됨 -->
 
             <div class="flex items-center justify-end mb-1">
                 <p id="modal-date" class="text-xs text-[#888] font-medium bg-gray-50 px-2 py-1 rounded">
