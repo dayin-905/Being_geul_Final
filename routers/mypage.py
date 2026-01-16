@@ -241,11 +241,13 @@ def get_user_profile(user_email: str, db: Session = Depends(get_db)):
     if total_policies == 0:
         total_policies = 1
 
-    # 3. 활동 지수 계산 분자: 내가 찜한 활동 개수
-    like_count = db.query(UserAction).filter(
-        UserAction.user_email == user_email, 
-        UserAction.type == 'like'
-    ).count()
+    # 3. 활동 지수 계산 분자: 내가 찜한 활동 개수 (유효한 정책만 카운트)
+    like_count = db.query(UserAction)\
+        .join(Policy, UserAction.policy_id == Policy.id)\
+        .filter(
+            UserAction.user_email == user_email, 
+            UserAction.type == 'like'
+        ).count()
 
     # 4. 퍼센트 계산
     percentage = int((like_count / total_policies) * 100)
@@ -552,13 +554,19 @@ def get_user_stats(user_email: str, db: Session = Depends(get_db)):
         score = 0
         if type_ == 'like':
             score = 10
-        elif type_ == 'pass':
-            score = 2  # 패스해도 봤다는 것에 의미를 둔다면 점수 부여 (선택사항)
             
         category_scores[key] = category_scores.get(key, 0) + score
         
     # 3. 차트용 데이터 변환
+    # [FIX] 점수 로직 단순화: Like(10점), Pass(0점)
+    # 중복 방지를 위해 정책 ID 기준으로 최신 액션만 반영하는 것이 좋으나,
+    # 현재 구조에서는 단순 합산하되, Pass는 0점이므로 영향 없음.
+    # 하지만 0점 카테고리가 찌그러지는 현상(Chart.js auto-scale) 방지는 프론트엔드에서 min/max 설정으로 해결.
+    
     labels = list(category_scores.keys())
     data = list(category_scores.values())
+    
+    # [DEBUG] 로그 출력
+    print(f"[Stats] User: {user_email}, Scores: {data}")
     
     return {"labels": labels, "data": data}

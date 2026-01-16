@@ -287,7 +287,6 @@
                 class="col-span-1 h-[320px] rounded-[40px] bg-white p-8 shadow-sm border border-gray-100 flex flex-col justify-center">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="font-bold text-xl text-gray-800">관심 키워드 트렌드</h3>
-                    <button class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-ellipsis"></i></button>
                 </div>
                 <div class="w-full h-full flex justify-center items-center"><canvas id="myChart"></canvas></div>
             </div>
@@ -570,10 +569,12 @@
         </div>
     </div>
 
-    <script src="/static/script.js"></script>
+    <!-- [FIX] 캐시 문제 해결을 위해 버전 파라미터 추가 -->
+    <script src="/static/script.js?v=20260116_max120"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
+            // 헤더 애니메이션 즉시 실행 (깜빡임 방지)
             if (window.playHeaderAnimation) setTimeout(() => { window.playHeaderAnimation(); }, 100);
 
             // [NEW] MBTI 결과에 따른 색상/이미지 매핑 (백엔드 데이터 보완용)

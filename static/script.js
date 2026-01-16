@@ -856,36 +856,118 @@ document.addEventListener("DOMContentLoaded", () => {
             window.updateMyPageChart = function () {
                 const ctx = document.getElementById('myChart');
                 const currentUserEmail = localStorage.getItem('userEmail');
+                // Chart.js가 로드되지 않았거나 필수 요소가 없으면 중단
                 if (!ctx || typeof Chart === 'undefined' || !currentUserEmail) return;
 
                 fetch(`/api/mypage/stats?user_email=${currentUserEmail}`)
                     .then(res => res.json())
                     .then(stats => {
-                        const existingChart = Chart.getChart(ctx); // 기존 차트 인스턴스 확인
-
+                        // [FIX] 기존 차트 파괴 로직 강화 (v2, v3, v4 호환)
+                        const existingChart = Chart.getChart ? Chart.getChart(ctx) : null;
                         if (existingChart) {
-                            // 기존 차트가 있으면 데이터만 업데이트
-                            existingChart.data.labels = stats.labels;
-                            existingChart.data.datasets[0].data = stats.data;
-                            existingChart.update();
-                        } else {
-                            // 차트가 없으면 새로 생성
-                            new Chart(ctx, {
-                                type: 'radar',
-                                data: {
-                                    labels: stats.labels,
-                                    datasets: [{
-                                        label: '나의 관심도',
-                                        data: stats.data,
-                                        backgroundColor: 'rgba(244, 130, 69, 0.2)',
-                                        borderColor: '#F48245',
-                                        pointBackgroundColor: '#F48245',
-                                        borderWidth: 2
-                                    }]
-                                },
-                                options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { color: '#eee' }, grid: { color: '#eee' }, pointLabels: { font: { size: 12, family: 'Pretendard' }, color: '#666' }, ticks: { display: false, maxTicksLimit: 5 } } }, plugins: { legend: { display: false } } }
-                            });
+                            existingChart.destroy();
+                        } else if (window.myRadarChart instanceof Chart) {
+                            window.myRadarChart.destroy();
                         }
+
+                        // [데이터 검증] 모든 값이 0인지 확인 (디버깅용)
+                        const allZero = stats.data.every(val => val === 0);
+
+                        // [NEW] 데이터가 없으면 그래프 대신 안내 메시지 표시
+                        if (allZero) {
+                            if (existingChart) existingChart.destroy();
+                            if (window.myRadarChart instanceof Chart) window.myRadarChart.destroy();
+
+                            // 캔버스 숨기고 메시지 표시
+                            ctx.style.display = 'none';
+                            let msgEl = document.getElementById('chart-empty-msg');
+                            if (!msgEl) {
+                                msgEl = document.createElement('div');
+                                msgEl.id = 'chart-empty-msg';
+                                msgEl.className = 'absolute inset-0 flex flex-col items-center justify-center text-gray-400';
+                                msgEl.innerHTML = '<i class="fa-solid fa-chart-pie text-4xl mb-2 opacity-50"></i><span class="text-xs font-bold mt-2">아직 데이터가 부족해요</span>';
+                                ctx.parentElement.appendChild(msgEl);
+                                ctx.parentElement.style.position = 'relative';
+                            } else {
+                                msgEl.style.display = 'flex';
+                            }
+                            return;
+                        } else {
+                            // 데이터 있으면 메시지 숨기고 캔버스 보이기
+                            ctx.style.display = 'block';
+                            const msgEl = document.getElementById('chart-empty-msg');
+                            if (msgEl) msgEl.style.display = 'none';
+                        }
+
+                        // 차트 생성
+                        window.myRadarChart = new Chart(ctx, {
+                            type: 'radar',
+                            data: {
+                                labels: stats.labels,
+                                datasets: [{
+                                    label: '나의 관심도',
+                                    data: stats.data,
+                                    backgroundColor: 'rgba(244, 130, 69, 0.2)',
+                                    borderColor: '#F48245',
+                                    pointBackgroundColor: '#F48245',
+                                    pointBorderColor: '#fff',
+                                    pointHoverBackgroundColor: '#fff',
+                                    pointHoverBorderColor: '#F48245',
+                                    borderWidth: 2
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                // [중요] Chart.js 버전에 따른 스케일 옵션 호환성 처리
+                                // v3, v4: scales.r 사용
+                                scales: {
+                                    r: {
+                                        min: 0,
+                                        max: 120, // [FIX] 120점까지 확장 (재미 요소)
+                                        beginAtZero: true,
+                                        angleLines: { display: true, color: '#f3f4f6' },
+                                        grid: { circular: false, color: '#f3f4f6' },
+                                        pointLabels: {
+                                            font: { size: 12, family: 'Pretendard', weight: 'bold' },
+                                            color: '#6b7280'
+                                        },
+                                        ticks: {
+                                            display: false,
+                                            stepSize: 20,
+                                            count: 7 // 0, 20, 40, 60, 80, 100, 120
+                                        }
+                                    }
+                                },
+                                // v2: scale 사용 (구버전 호환)
+                                scale: {
+                                    ticks: {
+                                        beginAtZero: true,
+                                        min: 0,
+                                        max: 120,
+                                        stepSize: 20,
+                                        display: false
+                                    },
+                                    pointLabels: { fontSize: 12, fontColor: '#6b7280' },
+                                    gridLines: { color: '#f3f4f6' }
+                                },
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                                        titleFont: { family: 'Pretendard' },
+                                        bodyFont: { family: 'Pretendard' },
+                                        padding: 10,
+                                        cornerRadius: 8,
+                                        callbacks: {
+                                            label: function (context) {
+                                                return ` 나의 관심도: ${context.raw}`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
                     })
                     .catch(err => console.error("Stats Update Error:", err));
             };
@@ -1377,6 +1459,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     // 활동 지수 업데이트
                     if (typeof window.loadUserProfile === 'function') {
                         setTimeout(() => window.loadUserProfile(), 500);
+                    }
+
+                    // [NEW] 차트 업데이트 (삭제 반영)
+                    if (typeof window.updateMyPageChart === 'function') {
+                        setTimeout(() => window.updateMyPageChart(), 500);
                     }
 
                     // 재로딩
