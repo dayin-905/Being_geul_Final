@@ -1,38 +1,68 @@
+import os
+import traceback
+from urllib.parse import urlencode, quote
+from dotenv import load_dotenv
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from passlib.context import CryptContext
+from starlette.responses import RedirectResponse
+import httpx
+
+# 데이터베이스 관련 임포트 (사용자 환경에 맞게 유지)
 from database import get_db
 from models import User
 
+# .env 파일 로드 (서버 실행 시 환경변수를 읽어옴)
+load_dotenv()
+
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-# 1. 비밀번호 암호화 도구 설정
-# 기존 bcrypt 부분을 지우거나 주석 처리하고 아래처럼 바꾸세요
+# ============================================================
+# 1. 설정 및 보안
+# ============================================================
+
+# 비밀번호 암호화 (argon2가 설치되어 있다고 가정)
+# 만약 에러나면 schemes=["bcrypt"] 로 변경하세요.
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
-# 2. 데이터 검증용 스키마 (Pydantic)
+# Pydantic 모델
 class UserCreate(BaseModel):
     email: str
     password: str
     name: str
-    region: str | None = None # 선택사항
+    region: str | None = None
 
 class UserLogin(BaseModel):
     email: str
     password: str
 
-# 3. [회원가입 API]
+# 환경 변수 가져오기 (없으면 에러가 아니라 빈 문자열 반환)
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "")
+
+NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID", "")
+NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET", "")
+NAVER_REDIRECT_URI = os.getenv("NAVER_REDIRECT_URI", "")
+
+# 프론트엔드 메인 주소 (로그인 성공 후 여기로 보냅니다)
+FRONTEND_URL = "https://newsync.shop"
+
+# ============================================================
+# 2. 일반 회원가입 / 로그인 API
+# ============================================================
+
 @router.post("/signup")
 def signup(user: UserCreate, db: Session = Depends(get_db)):
-    import traceback
     try:
-        # 이미 가입된 이메일인지 확인
+        # 중복 체크
         existing_user = db.query(User).filter(User.email == user.email).first()
         if existing_user:
             raise HTTPException(status_code=400, detail="이미 가입된 이메일입니다.")
         
-        # 비밀번호 암호화 (보안 필수!)
+        # 비밀번호 해싱
         hashed_password = pwd_context.hash(user.password)
         
         # DB 저장
@@ -41,40 +71,35 @@ def signup(user: UserCreate, db: Session = Depends(get_db)):
             password=hashed_password,
             name=user.name,
             region=user.region,
-            provider="local"  # 직접 가입이므로 local
+            provider="local"
         )
         db.add(new_user)
         db.commit()
         
         return {"message": "회원가입 성공", "email": new_user.email}
+
     except HTTPException:
         raise
     except Exception as e:
         error_msg = traceback.format_exc()
-        # 파일로 에러 로그 남기기
         with open("server_error.log", "w", encoding="utf-8") as f:
             f.write(error_msg)
-        print(error_msg) # 콘솔 출력
-        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
+        print(f"[ERROR] Signup Failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error")
 
-# 4. [로그인 API]
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
-    # 이메일로 사용자 찾기
     db_user = db.query(User).filter(User.email == user.email).first()
     
     if not db_user:
         raise HTTPException(status_code=400, detail="이메일 또는 비밀번호가 틀립니다.")
     
-    # 소셜 로그인 사용자인지 체크
     if db_user.provider != "local":
         raise HTTPException(status_code=400, detail=f"{db_user.provider} 계정으로 로그인해주세요.")
 
-    # 비밀번호 확인 (암호화된 것끼리 비교)
     if not pwd_context.verify(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="이메일 또는 비밀번호가 틀립니다.")
     
-    # 로그인 성공! (실무에선 여기서 토큰을 발급하지만, 일단 성공 메시지와 유저 정보 반환)
     return {
         "message": "로그인 성공",
         "user": {
@@ -84,43 +109,24 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         }
     }
 
-
-# 5. [로그인 검증 API] (프론트엔드 오류 방지용)
 @router.get("/verify")
 def verify_session():
-    # 현재 세션/토큰 구현이 없으므로, 프론트엔드에서 localStorage로 관리되는 상태를 유지하기 위해
-    # 무조건 200 OK를 반환합니다. 추후 JWT 또는 세션 검증 로직으로 대체해야 합니다.
     return {"message": "Session is valid"}
 
-# ============================================================
-# [OAuth 설정] 환경 변수 로드 및 설정
-# ============================================================
-import os
-import httpx
-from urllib.parse import urlencode
-from dotenv import load_dotenv
-from starlette.responses import RedirectResponse
-
-load_dotenv()
-
-# Google Config
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "").strip()
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI", "").strip()
-
-# Naver Config
-NAVER_CLIENT_ID = os.getenv("NAVER_CLIENT_ID", "").strip()
-NAVER_CLIENT_SECRET = os.getenv("NAVER_CLIENT_SECRET", "").strip()
-NAVER_REDIRECT_URI = os.getenv("NAVER_REDIRECT_URI", "").strip()
 
 # ============================================================
-# [Google OAuth]
+# 3. Google OAuth
 # ============================================================
+
 @router.get("/google/login")
 def google_login():
+    """구글 로그인 페이지로 리다이렉트"""
+    if not GOOGLE_REDIRECT_URI:
+        raise HTTPException(status_code=500, detail="서버 설정 오류: GOOGLE_REDIRECT_URI가 없습니다.")
+
     params = {
         "client_id": GOOGLE_CLIENT_ID,
-        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "redirect_uri": GOOGLE_REDIRECT_URI, # 구글 콘솔과 일치해야 함 (api.newsync.shop)
         "response_type": "code",
         "scope": "openid email profile",
         "access_type": "offline",
@@ -131,6 +137,7 @@ def google_login():
 
 @router.get("/google/callback")
 async def google_callback(code: str, db: Session = Depends(get_db)):
+    """구글 로그인 후 돌아오는 처리"""
     if not code:
         raise HTTPException(status_code=400, detail="Code not found")
 
@@ -147,11 +154,13 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
     async with httpx.AsyncClient() as client:
         token_res = await client.post(token_url, data=data)
         if token_res.status_code != 200:
+            print(f"[Google Error] {token_res.text}")
             raise HTTPException(status_code=400, detail="Google Login Failed (Token)")
+        
         token_json = token_res.json()
         access_token = token_json.get("access_token")
 
-        # 2. 사용자 정보 가져오기
+        # 2. 유저 정보 조회
         user_info_res = await client.get(
             "https://www.googleapis.com/oauth2/v2/userinfo",
             headers={"Authorization": f"Bearer {access_token}"}
@@ -164,51 +173,50 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
     email = user_info.get("email")
     name = user_info.get("name")
     
-    # 이미 존재하는 사용자인지 확인
     db_user = db.query(User).filter(User.email == email).first()
     
     if not db_user:
-        # 신규 가입
         new_user = User(
             email=email,
             name=name,
             provider="google",
-            region="전국" # 기본값
+            region="전국"
         )
         db.add(new_user)
         db.commit()
-        db.refresh(new_user)
-        # return {"message": "구글 회원가입 성공", "user": email} # for debug
-    else:
-        # 기존 유저 -> provider가 다르면 에러? 일단 pass
-        pass
     
-    # 4. 프론트엔드로 리다이렉트 (로그인 성공 처리)
-    # [수정] landing.html(/) 대신 nav.html이 있는 main.html로 리다이렉트
-    # [안전장치] 이름에 한글/특수문자가 있을 수 있으므로 URL 인코딩 처리
-    from urllib.parse import quote
+    # 4. 로그인 완료 페이지로 이동 (메인 도메인 사용)
     encoded_name = quote(name) if name else "Member"
-    redirect_url = f"/main.html?social_login=success&email={email}&name={encoded_name}&provider=google"
+    
+    # [수정됨] https://newsync.shop/main.html 로 이동
+    redirect_url = f"{FRONTEND_URL}/main.html?social_login=success&email={email}&name={encoded_name}&provider=google"
+    
     return RedirectResponse(redirect_url)
 
+
 # ============================================================
-# [Naver OAuth]
+# 4. Naver OAuth
 # ============================================================
+
 @router.get("/naver/login")
 def naver_login():
-    state = "random_state_string" # 보안을 위해 랜덤 생성 권장
+    """네이버 로그인 페이지로 리다이렉트"""
+    if not NAVER_REDIRECT_URI:
+        raise HTTPException(status_code=500, detail="서버 설정 오류: NAVER_REDIRECT_URI가 없습니다.")
+
+    state = "random_state_string_1234" 
     params = {
         "client_id": NAVER_CLIENT_ID,
-        "redirect_uri": NAVER_REDIRECT_URI,
+        "redirect_uri": NAVER_REDIRECT_URI, # 네이버 콘솔과 일치해야 함 (api.newsync.shop)
         "response_type": "code",
         "state": state,
     }
     url = f"https://nid.naver.com/oauth2.0/authorize?{urlencode(params)}"
-    print(f"\n[DEBUG] Generated Naver Login URL: {url}\n") # <--- 디버깅용 로그
     return RedirectResponse(url)
 
 @router.get("/naver/callback")
 async def naver_callback(code: str, state: str, db: Session = Depends(get_db)):
+    """네이버 로그인 후 돌아오는 처리"""
     if not code:
         raise HTTPException(status_code=400, detail="Code not found")
 
@@ -223,20 +231,23 @@ async def naver_callback(code: str, state: str, db: Session = Depends(get_db)):
     }
     
     async with httpx.AsyncClient() as client:
-        token_res = await client.get(token_url, params=params) # 네이버는 GET 권장? 문서마다 다름, 보통 GET/POST 둘다 됨
+        token_res = await client.get(token_url, params=params)
         if token_res.status_code != 200:
+            print(f"[Naver Error] {token_res.text}")
             raise HTTPException(status_code=400, detail="Naver Login Failed (Token)")
+        
         token_json = token_res.json()
         access_token = token_json.get("access_token")
 
-        # 2. 사용자 정보 가져오기
+        # 2. 유저 정보 조회
         user_info_res = await client.get(
             "https://openapi.naver.com/v1/nid/me",
             headers={"Authorization": f"Bearer {access_token}"}
         )
         if user_info_res.status_code != 200:
             raise HTTPException(status_code=400, detail="Naver Login Failed (UserInfo)")
-        user_info = user_info_res.json().get("response") # 네이버는 response 키 안에 있음
+        
+        user_info = user_info_res.json().get("response")
 
     # 3. DB 처리
     email = user_info.get("email")
@@ -253,11 +264,11 @@ async def naver_callback(code: str, state: str, db: Session = Depends(get_db)):
         )
         db.add(new_user)
         db.commit()
-    
-    # 4. 프론트엔드로 리다이렉트 (로그인 성공 처리)
-    # [수정] landing.html(/) 대신 nav.html이 있는 main.html로 리다이렉트
-    # [안전장치] 이름에 한글/특수문자가 있을 수 있으므로 URL 인코딩 처리
-    from urllib.parse import quote
+
+    # 4. 로그인 완료 페이지로 이동 (메인 도메인 사용)
     encoded_name = quote(name) if name else "Member"
-    redirect_url = f"/main.html?social_login=success&email={email}&name={encoded_name}&provider=naver"
+
+    # [수정됨] https://newsync.shop/main.html 로 이동
+    redirect_url = f"{FRONTEND_URL}/main.html?social_login=success&email={email}&name={encoded_name}&provider=naver"
+    
     return RedirectResponse(redirect_url)
